@@ -22,6 +22,8 @@ Coalition, People's Hub, and Highlander Center.
 - Rejoined words split by source line-break hyphenation in runtime text fields.
 - Added deterministic search, comparison, challenge-mapping, and discussion
   scaffolds. These scaffolds do not add claims to the source entries.
+- Added source-derived manual sentinel labels for build-time extraction
+  evaluation; these labels are not source-authored recommendations.
 - Excluded images and image captions from redistribution.
 
 This independent project is not endorsed by Beautiful Trouble or the book's

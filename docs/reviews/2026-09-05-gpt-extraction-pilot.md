@@ -2,19 +2,23 @@
 
 ## Verdict
 
-**Not accepted for full-corpus extraction.** GPT-5 Mini produced substantially
-better method depth than GPT-5 Nano, and the five candidate cards passed
-structural and exact-citation gates. A separate semantic verifier correctly
-found the two known taxonomy errors, but a same-model verifier also approved
-unsupported inferences. A distinct GPT-5.4 Mini verifier caught more of those
-inferences and then rejected the Remunicipalization card because only one
-generated transfer question survived.
+**Accepted for bounded full-corpus extraction, but not yet for runtime
+integration.** GPT-5 Mini produced substantially better method depth than
+GPT-5 Nano, and all five candidate cards passed structural and exact-citation
+gates. The final pipeline combines a distinct GPT-5.4 Mini semantic verifier,
+18 source-derived manual sentinel labels, deterministic human overrides, and
+bounded verifier-feedback regeneration. All five cards passed after manual
+item-level review.
 
-The stop is appropriate: repeating verification cannot repair a rejected
-candidate because the verifier is forbidden to rewrite claims. The next gate
-is an explicit regeneration loop that sends recorded verifier decisions back
-to the extractor and preserves both candidate versions. Do not process all 85
-entries until the same five cards pass that loop and manual review.
+The gate worked rather than merely becoming permissive. Community Land Trust
+required one replacement card after its original one-sentence description was
+rejected. Remunicipalization required two replacements: the first still had an
+unsupported actor premise in a transfer question, while the second initially
+retained two inferred enabling conditions that the manual labels removed. The
+pipeline preserves every candidate, verifier decision, override, regenerated
+card, and subsequent verification in ignored build artifacts. Processing all 85
+entries is now unblocked; adding the resulting cards to runtime tools still
+requires separate practitioner acceptance.
 
 ## Scope and boundaries
 
@@ -93,8 +97,10 @@ harness instructs the model not to manufacture them by juxtaposing facts.
 | Source/runtime separation | Pass | Inputs and outputs remain in ignored build-time directories; runtime code and tracked content are unchanged. |
 | No forced tension filling | Pass | Empty tension arrays were retained. |
 | Method depth | Pass with caveat | Mini extracted concrete mechanisms, actors, finance/legal conditions, and inquiry prompts, but these have not yet been exercised through MCP tools. |
-| Semantic field fidelity | **Fail** | Two of five final cards misclassified problem or funding context as implementation constraints. |
-| Full-corpus readiness | **Fail** | Mechanical citation checks cannot prove that cited evidence entails a generated claim or that its category is correct. |
+| Semantic field fidelity | Pass with adjudication | The distinct verifier matched 15 of 18 applicable sentinel decisions; three disagreements were resolved by recorded human labels rather than silent rewriting. |
+| Regeneration completeness | Pass | Community Land Trust passed after one replacement; Remunicipalization passed after two, with cumulative feedback preventing rejected ideas from reappearing. |
+| Manual method-card review | Pass | All five final cards retain concrete mechanisms, actors, conditions or constraints, observable signals, at least two transfer questions, and at least three search concepts. |
+| Full-corpus extraction readiness | **Pass** | The bounded pipeline may now process 85 entries. Runtime integration and practitioner scenario acceptance remain separate gates. |
 
 ## Semantic-verifier experiment
 
@@ -127,22 +133,64 @@ management even though those elements are supported across separate source
 sentences. Verification therefore improves precision but is not yet a
 calibrated judge. Manual labels for these five entries are still required.
 
+## Calibrated regeneration result
+
+The tracked fixture at `evaluation/method-card-pilot-labels.json` contains 18
+manual sentinel decisions tied to the source snapshot hash, candidate prompt
+version, exact candidate text, and item ID. Labels that do not match the exact
+candidate version are reported as not applicable rather than being applied to
+a different claim occupying the same array position.
+
+Across the final run's candidate versions, all 18 labels were applicable. The
+verifier matched 15. Human adjudication overrode three decisions:
+
+- Social Cooperatives: “reliance” on government contracts added an unstated
+  dependency, so the constraint was removed rather than moved.
+- Remunicipalization: examples of contract termination did not establish an
+  enabling legal framework.
+- Remunicipalization: one municipal-company example did not establish abstract
+  municipal authority as an enabling condition.
+
+Regeneration feedback is cumulative. This matters because the first
+Remunicipalization replacement removed the initial unsupported questions, but
+a later replacement repeated them when it received only the immediately prior
+round's decisions. Carrying all earlier rejections into subsequent rounds
+prevented that recurrence. The loop is bounded to two replacements; a card
+that still fails after that exits nonzero.
+
+Final reviewed-card inventory:
+
+| Measure | Result |
+|---|---:|
+| Accepted entries | 5/5 |
+| Manual sentinel decisions | 18 |
+| Verifier agreements | 15 |
+| Recorded human overrides | 3 across 2 entries |
+| Mechanisms | 21 |
+| Actors and roles | 19 |
+| Enabling conditions | 10 |
+| Constraints | 10 |
+| Observable signals | 20 |
+| Transfer questions | 11 |
+| Search concepts | 24 |
+| Source-exact evidence references retained | 271 |
+
 ## Usage accounting note
 
 The extraction comparison used 43,151 captured tokens. The same-model
 verification comparison used 36,426, and the bounded distinct-verifier tests
-used 26,897, for 106,474 captured development tokens overall. Six earlier
-rejected Nano attempts used an initial harness revision that did not persist
-response usage, so cumulative pilot usage cannot be reconstructed exactly.
-Attempt logs now use unique filenames so a rerun cannot overwrite prior usage
-or rejection evidence. No cost estimate is asserted here.
+used 26,897. Calibration and regeneration development added 80,021 captured
+tokens, for 186,495 captured development tokens overall. Six earlier rejected
+Nano attempts used an initial harness revision that did not persist response
+usage, so cumulative pilot usage cannot be reconstructed exactly. Attempt logs
+use unique filenames so a rerun cannot overwrite prior usage or rejection
+evidence. No cost estimate is asserted here.
 
-## Required next experiment
+## Next gate
 
-Create manual expected decisions for the five pilot entries, then add an
-explicit regeneration loop. When verification removes or reclassifies enough
-items to fail depth, pass the recorded decisions to a fresh extraction request;
-do not ask the verifier to invent replacements. Preserve the original card,
-verifier decisions, regenerated card, and second verification as separate
-artifacts. Only proceed to the 85-entry corpus if the regenerated cards pass
-the mechanical checks and the verifier agrees with the manual labels.
+Run the same extraction, verification, adjudication, and bounded regeneration
+pipeline over all 85 entries. Review the resulting corpus for new semantic
+failure classes before adding method cards to tracked runtime data. Then rerun
+the plain-language housing, gig-worker, and renewable-energy practitioner
+scenarios through the actual MCP tools; pilot-card quality does not prove
+runtime retrieval or comparison quality.
