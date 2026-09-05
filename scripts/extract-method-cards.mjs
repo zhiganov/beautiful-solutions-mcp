@@ -83,6 +83,23 @@ const verificationResultSchema = z.object({
   }).strict()).max(100),
 }).strict();
 
+const calibrationSchema = z.object({
+  schemaVersion: z.literal(1),
+  kind: z.string().min(1),
+  sourceSha256: z.string().regex(/^[a-f0-9]{64}$/),
+  candidatePromptVersion: z.string().min(1),
+  candidateModel: z.string().min(1),
+  labels: z.array(z.object({
+    entryId: z.string().min(1),
+    itemId: z.string().min(1),
+    itemText: z.string().min(1),
+    itemFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+    expectedVerdict: z.enum(['supported', 'misclassified', 'unsupported']),
+    expectedTargetField: z.enum([...cardFields, 'remove']),
+    note: z.string().min(1),
+  }).strict()).min(1),
+}).strict();
+
 const evidenceClaimJsonSchema = {
   type: 'object',
   properties: {
@@ -567,6 +584,7 @@ async function regenerateEntry(entry, previousExtraction, semanticFeedback, apiK
     const validation = parsed.success ? validateMaterializedCard(entry, parsed.data) : { problems: ['schema failure'] };
     if (
       cached.promptVersion === regenerationPromptVersion
+      && cached.candidatePromptVersion === promptVersion
       && cached.model === model
       && cached.sourceHash === previousExtraction.sourceHash
       && cached.priorCardHash === priorCardHash
@@ -596,6 +614,7 @@ async function regenerateEntry(entry, previousExtraction, semanticFeedback, apiK
     await writeFile(attemptLogPath, `${JSON.stringify({
       schemaVersion: 1,
       promptVersion: regenerationPromptVersion,
+      candidatePromptVersion: promptVersion,
       model,
       sourceHash: previousExtraction.sourceHash,
       priorCardHash,
@@ -608,6 +627,7 @@ async function regenerateEntry(entry, previousExtraction, semanticFeedback, apiK
       const artifact = {
         schemaVersion: 1,
         promptVersion: regenerationPromptVersion,
+        candidatePromptVersion: promptVersion,
         model,
         sourceHash: previousExtraction.sourceHash,
         priorCardHash,
@@ -666,6 +686,19 @@ function candidateItemText(item) {
   return `${item.content.actor}: ${item.content.role}`;
 }
 
+function candidateItemFingerprint(item) {
+  return sha256(JSON.stringify(item));
+}
+
+function calibrationLabelKey(label) {
+  return [
+    label.entryId,
+    label.itemFingerprint,
+    label.expectedVerdict,
+    label.expectedTargetField,
+  ].join('\n');
+}
+
 function scoreCalibration(entry, card, verification, calibration) {
   const items = candidateItems(card, sourceSentences(entry.body));
   const itemById = new Map(items.map(item => [item.itemId, item]));
@@ -673,7 +706,11 @@ function scoreCalibration(entry, card, verification, calibration) {
   const labels = calibration.labels.filter(label => label.entryId === entry.id);
   const results = labels.map(label => {
     const item = itemById.get(label.itemId);
-    if (!item || candidateItemText(item) !== label.itemText) {
+    if (
+      !item
+      || candidateItemText(item) !== label.itemText
+      || candidateItemFingerprint(item) !== label.itemFingerprint
+    ) {
       return { ...label, status: 'not_applicable' };
     }
     const decision = decisionById.get(label.itemId);
@@ -1063,17 +1100,23 @@ async function main() {
 
   const sourceText = await readFile(sourcePath, 'utf8');
   const source = JSON.parse(sourceText);
-  const calibration = JSON.parse(await readFile(calibrationPath, 'utf8'));
+  const calibration = calibrationSchema.parse(JSON.parse(await readFile(calibrationPath, 'utf8')));
   if (calibration.sourceSha256 !== sha256(sourceText)) {
     throw new Error('Manual calibration labels do not match the build-time source snapshot.');
   }
   if (calibration.candidatePromptVersion !== promptVersion) {
     throw new Error('Manual calibration labels do not match the candidate extraction prompt version.');
   }
+  if (calibration.candidateModel !== model) {
+    throw new Error('Manual calibration labels do not match the candidate extraction model.');
+  }
   const byId = new Map(source.entries.map(entry => [entry.id, entry]));
   const entryFlag = process.argv.indexOf('--entry');
   const requestedIds = entryFlag >= 0 ? [process.argv[entryFlag + 1]] : pilotIds;
   if (requestedIds.some(id => !id)) throw new Error('--entry requires an entry ID.');
+  if (requestedIds.some(id => !pilotIds.includes(id))) {
+    throw new Error('--entry is limited to one of the five calibrated pilot entries.');
+  }
   const entries = requestedIds.map(id => {
     const entry = byId.get(id);
     if (!entry) throw new Error(`Pilot source entry not found: ${id}`);
@@ -1086,6 +1129,8 @@ async function main() {
     mkdir(verificationCacheDir, { recursive: true }),
   ]);
   const results = [];
+  const expectedCalibrationLabels = calibration.labels.filter(label => requestedIds.includes(label.entryId));
+  const coveredCalibrationLabels = new Set();
   const extractionUsage = {};
   const verificationUsage = {};
   for (const entry of entries) {
@@ -1100,6 +1145,9 @@ async function main() {
       const verification = await verifyEntry(entry, extraction, apiKey, verificationModel);
       if (!verification.cacheHit) addUsage(verificationUsage, verification.usage);
       const calibrationScore = scoreCalibration(entry, extraction.card, verification.verification, calibration);
+      calibrationScore.results
+        .filter(result => result.status !== 'not_applicable')
+        .forEach(result => coveredCalibrationLabels.add(calibrationLabelKey(result)));
       if (calibrationScore.failed > 0) calibrationFailed = true;
       const calibrated = applyCalibrationOverrides(
         entry,
@@ -1161,6 +1209,9 @@ async function main() {
   const totalUsage = {};
   addUsage(totalUsage, extractionUsage);
   addUsage(totalUsage, verificationUsage);
+  const uncoveredCalibrationLabels = expectedCalibrationLabels.filter(
+    label => !coveredCalibrationLabels.has(calibrationLabelKey(label)),
+  );
 
   const output = {
     schemaVersion: 3,
@@ -1172,6 +1223,15 @@ async function main() {
     generatedAt: new Date().toISOString(),
     sourcePath: '.source-cache/toolbox-full.json',
     calibrationPath: 'evaluation/method-card-pilot-labels.json',
+    calibrationCoverage: {
+      expected: expectedCalibrationLabels.length,
+      covered: coveredCalibrationLabels.size,
+      uncovered: uncoveredCalibrationLabels.map(label => ({
+        entryId: label.entryId,
+        itemId: label.itemId,
+        itemFingerprint: label.itemFingerprint,
+      })),
+    },
     entries: results,
     runUsage: {
       extraction: extractionUsage,
@@ -1184,9 +1244,10 @@ async function main() {
   console.log(`Run usage: ${totalUsage.input_tokens ?? 0} input, ${totalUsage.output_tokens ?? 0} output, ${totalUsage.total_tokens ?? 0} total tokens`);
   const accepted = results.filter(result => result.status === 'accepted').length;
   console.log(`Pilot verdict: ${accepted}/${results.length} entries accepted.`);
+  console.log(`Calibration coverage: ${coveredCalibrationLabels.size}/${expectedCalibrationLabels.length} labels applied.`);
   const disagreementEntries = results.filter(result => result.verifierDisagreedWithManualLabel).length;
   console.log(`Manual calibration overrides were required for ${disagreementEntries}/${results.length} entries.`);
-  if (accepted !== results.length) process.exitCode = 1;
+  if (accepted !== results.length || uncoveredCalibrationLabels.length > 0) process.exitCode = 1;
 }
 
 await main();

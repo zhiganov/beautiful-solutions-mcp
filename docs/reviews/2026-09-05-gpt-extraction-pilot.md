@@ -137,9 +137,12 @@ calibrated judge. Manual labels for these five entries are still required.
 
 The tracked fixture at `evaluation/method-card-pilot-labels.json` contains 18
 manual sentinel decisions tied to the source snapshot hash, candidate prompt
-version, exact candidate text, and item ID. Labels that do not match the exact
-candidate version are reported as not applicable rather than being applied to
-a different claim occupying the same array position.
+version, extraction model, item ID, and a fingerprint of the complete item
+including rationale and evidence sentence IDs. Labels that do not match the
+exact item version are reported as not applicable rather than being applied to
+a different item occupying the same array position. The pilot exits nonzero
+unless every expected label applies somewhere in the preserved candidate
+chain; a fresh model response cannot bypass calibration by changing its words.
 
 Across the final run's candidate versions, all 18 labels were applicable. The
 verifier matched 15. Human adjudication overrode three decisions:
@@ -164,6 +167,7 @@ Final reviewed-card inventory:
 |---|---:|
 | Accepted entries | 5/5 |
 | Manual sentinel decisions | 18 |
+| Sentinel coverage across preserved candidate chains | 18/18 |
 | Verifier agreements | 15 |
 | Recorded human overrides | 3 across 2 entries |
 | Mechanisms | 21 |
