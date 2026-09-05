@@ -17,6 +17,8 @@ Coalition, People's Hub, and Highlander Center.
 - Reshaped source fields into a stable JSON schema for MCP retrieval.
 - Normalized line endings and trimmed surrounding whitespace.
 - Converted source relationship keys and slugs into consistent identifiers.
+- Retained concise source-authored snapshots and excluded complete entry
+  write-ups; canonical links point readers to the full source entries.
 - Added deterministic search, comparison, challenge-mapping, and discussion
   scaffolds. These scaffolds do not add claims to the source entries.
 - Excluded images and image captions from redistribution.

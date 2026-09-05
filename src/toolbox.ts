@@ -58,7 +58,11 @@ export function searchToolbox(query: string, filters: { type?: EntryType; sector
 }
 
 export function getEntry(id: string) {
-  return attributed(requireEntry(id));
+  const entry = requireEntry(id);
+  return attributed({
+    ...entry,
+    readingBoundary: 'This record contains a concise source-authored summary and structural metadata, not the complete entry text. Use sourceUrl to read the full entry.',
+  });
 }
 
 export function getRelatedEntries(id: string, type?: EntryType) {
@@ -112,7 +116,6 @@ export function compareEntries(ids: string[]) {
     note: 'This matrix exposes source fields for comparison; it does not rank or declare a best model.',
     entries: selected.map(entry => ({
       ...compact(entry),
-      bodyExcerpt: entry.body.length > 1500 ? `${entry.body.slice(0, 1500)}…` : entry.body,
       epigraphs: entry.epigraphs,
       pullQuote: entry.pullQuote,
       references: entry.references,
@@ -196,6 +199,7 @@ export function getSourceInfo() {
     },
     limitations: [
       'English entries only.',
+      'The snapshot contains concise source-authored summaries and structural metadata, not complete entry write-ups.',
       'Images are excluded because image permissions may differ.',
       'Search relevance is lexical and deterministic, not semantic or prescriptive.',
       'CC BY-NC-SA 4.0 prohibits commercial use without separate permission.',

@@ -1,0 +1,24 @@
+{
+  "manifestVersion": "1",
+  "title": "Beautiful Solutions: A Toolbox for Liberation",
+  "author": "Elandria Williams, Rachel Plattus, Eli Feghali, and Nathan Schneider (editors)",
+  "edition": "2024",
+  "source": "https://beautifultrouble.org/toolbox/bsol",
+  "artifact": "mcp",
+  "slug": "beautiful-solutions",
+  "visibility": "public",
+  "license": "CC BY-NC-SA 4.0",
+  "rightsStatus": "open-license",
+  "attribution": "Based on Beautiful Solutions: A Toolbox for Liberation (2024), edited by Elandria Williams, Rachel Plattus, Eli Feghali, and Nathan Schneider, and published online by Beautiful Trouble under CC BY-NC-SA 4.0.",
+  "install": {
+    "type": "stdio",
+    "command": "node dist/index.js"
+  },
+  "domain": [
+    "solidarity economy",
+    "community ownership",
+    "economic democracy"
+  ],
+  "helps": "Explore source-grounded values, principles, questions, solutions, and stories for community economic challenges without treating situated examples as universal recommendations.",
+  "endorsed": false
+}

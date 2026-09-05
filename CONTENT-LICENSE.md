@@ -1,9 +1,10 @@
 # Content license
 
-The adapted toolbox text and metadata in `src/data/toolbox.json` are derived
-from **Beautiful Solutions: A Toolbox for Liberation**, published online by
-[Beautiful Trouble](https://beautifultrouble.org/toolbox/bsol) and credited to
-Beautiful Trouble and various authors.
+The source-authored summaries, short quotations, and metadata in
+`src/data/toolbox.json` are derived from **Beautiful Solutions: A Toolbox for
+Liberation**, published online by [Beautiful
+Trouble](https://beautifultrouble.org/toolbox/bsol) and credited to Beautiful
+Trouble and various authors. Complete entry write-ups are not included.
 
 The source site states that this material is licensed under the
 [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International

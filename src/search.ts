@@ -65,7 +65,6 @@ export function searchEntries(entries: ToolboxEntry[], query: string, filters: S
       title: tokenSet(entry.title),
       sector: tokenSet(entry.sector ?? ''),
       summary: tokenSet(entry.summary),
-      body: tokenSet(entry.body),
       people: tokenSet([...entry.authors, ...entry.guides].join(' ')),
       related: tokenSet(entry.related.map(item => `${item.title} ${item.summary ?? ''}`).join(' ')),
     };
@@ -73,7 +72,6 @@ export function searchEntries(entries: ToolboxEntry[], query: string, filters: S
       title: 8,
       sector: 5,
       summary: 4,
-      body: 1,
       people: 2,
       related: 2,
     };

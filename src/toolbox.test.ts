@@ -14,7 +14,7 @@ import {
 } from './toolbox.js';
 
 describe('source snapshot', () => {
-  it('contains the complete validated English inventory', () => {
+  it('contains the complete validated English index without full write-ups', () => {
     assert.equal(TOOLBOX.entries.length, 85);
     assert.deepEqual(SOURCE_MANIFEST.inventory.countsByType, {
       principle: 10,
@@ -23,9 +23,10 @@ describe('source snapshot', () => {
       story: 32,
       value: 8,
     });
-    assert.ok(TOOLBOX.entries.every(entry => entry.id && entry.title && entry.body && entry.sourceUrl));
+    assert.ok(TOOLBOX.entries.every(entry => entry.id && entry.title && entry.summary && entry.sourceUrl));
     const ids = new Set(TOOLBOX.entries.map(entry => entry.id));
     assert.ok(TOOLBOX.entries.every(entry => entry.related.every(related => ids.has(related.id))));
+    assert.doesNotMatch(JSON.stringify(TOOLBOX), /"body"|"write_up"/);
     assert.doesNotMatch(JSON.stringify(TOOLBOX), /"image(?:_caption)?"|squarespace-cdn/i);
   });
 
@@ -44,13 +45,32 @@ describe('reference tools', () => {
     assert.equal(response.attribution.license, 'CC-BY-NC-SA-4.0');
   });
 
-  it('returns full entry provenance and source-authored relationships', () => {
+  it('returns entry provenance and source-authored relationships', () => {
     const response = getEntry('bsol-community-land-trust');
     assert.deepEqual(response.result.authors, ['May Louie', 'Sharon Cho']);
     assert.match(response.result.sourceUrl, /beautifultrouble\.org/);
+    assert.match(response.result.readingBoundary, /not the complete entry text/i);
+    assert.equal('body' in response.result, false);
 
     const related = getRelatedEntries('bsol-community-land-trust', 'principle');
     assert.ok(related.result.related.some(entry => entry.id === 'bsol-democratize-ownership'));
+  });
+});
+
+describe('Book Power compatibility', () => {
+  it('ships a public open-license stdio manifest', () => {
+    const manifest = JSON.parse(
+      readFileSync(new URL('../book-power.json', import.meta.url), 'utf8'),
+    ) as Record<string, unknown>;
+    assert.equal(manifest.manifestVersion, '1');
+    assert.equal(manifest.artifact, 'mcp');
+    assert.equal(manifest.visibility, 'public');
+    assert.equal(manifest.rightsStatus, 'open-license');
+    assert.equal(manifest.endorsed, false);
+    assert.deepEqual(manifest.install, {
+      type: 'stdio',
+      command: 'node dist/index.js',
+    });
   });
 });
 

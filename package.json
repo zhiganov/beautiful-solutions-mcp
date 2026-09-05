@@ -15,6 +15,7 @@
     "LICENSES.md",
     "CONTENT-LICENSE.md",
     "NOTICE.md",
+    "book-power.json",
     "README.md"
   ],
   "scripts": {

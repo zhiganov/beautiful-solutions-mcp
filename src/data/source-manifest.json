@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "retrievedAt": "2026-09-05T14:59:44.634Z",
   "source": {
     "work": "Beautiful Solutions: A Toolbox for Liberation",
@@ -14,11 +14,12 @@
     "toolboxUrl": "https://beautifultrouble.org/toolbox/bsol",
     "apiIndexUrl": "https://api.beautifultrouble.org/v2/en/toolbox-lite-minisearch.json"
   },
-  "selection": "English API entries whose source type begins with bsol-. Images and image captions excluded.",
+  "selection": "English API entries whose source type begins with bsol-. Source-authored snapshots and structural metadata retained; full write-ups, images, and image captions excluded.",
   "changes": [
     "Reshaped source fields into a stable JSON schema.",
     "Normalized line endings and trimmed surrounding whitespace.",
     "Converted relationship keys into normalized types and canonical source URLs.",
+    "Excluded full entry write-ups; retained concise source-authored snapshots and canonical links for reading the complete entries.",
     "Excluded images and image captions."
   ],
   "license": {
@@ -51,5 +52,5 @@
       "Values"
     ]
   },
-  "toolboxSha256": "b7e730dc309483190b68c1980ba994966c0127520d679c7e06ca8b81f72b9163"
+  "toolboxSha256": "ee7014e87a98bbc866eb206b681256db696a8544d2ea688206236c8505d90795"
 }

@@ -13,7 +13,7 @@ turning situated stories into universal prescriptions.
 | ID | Requirement |
 |---|---|
 | R0 | Help organizers, educators, facilitators, researchers, and community designers explore solidarity-economy possibilities for a real challenge. |
-| R1 | Preserve source fidelity: title, type, sector, text, authors, further reading, relationships, and canonical URL. |
+| R1 | Preserve source fidelity at the practical method layer: title, type, sector, source-authored summary, authors, further reading, relationships, and canonical URL. Keep complete write-ups at the source. |
 | R2 | Let the toolbox's five-part structure—values, principles, questions, solutions, stories—drive navigation and outputs. |
 | R3 | Support discovery, close reading, source-authored connection tracing, comparison, challenge mapping, and discussion design. |
 | R4 | Keep results deterministic and inspectable; the conversational model does synthesis, while the server retrieves and assembles source evidence. |
@@ -28,12 +28,26 @@ small weighted search layer and the source-authored relationship graph power
 eight MCP tools. Praxis tools assemble evidence and prompts but do not write
 new factual claims about the examples.
 
+### Extraction discipline
+
+The work is primarily **descriptive and dialectical**. Its values and
+principles are normative lenses, but its solutions and stories are situated
+possibilities rather than universal instructions. It is not treated as a
+procedural book. The extraction therefore preserves plural source types,
+questions, tensions, attribution, and authored relationships rather than
+converting the collection into a checklist or ranked recommendation system.
+
+The tracked snapshot is intentionally not a reconstruction of the complete
+book or online toolbox. It contains concise source-authored snapshots and
+structural metadata; complete entry write-ups remain available through each
+canonical source URL.
+
 ### Parts
 
 | Part | Mechanism | Requirements |
 |---|---|---|
 | P1. Source snapshot | Explicit sync script validates all official `bsol-` entries and writes a manifest with source URLs and hashes. | R1, R5, R6, R7 |
-| P2. Catalog index | Normalized types, sectors, summaries, full text, people, references, and related-entry edges. | R1, R2 |
+| P2. Catalog index | Normalized types, sectors, concise source-authored summaries, people, references, and related-entry edges. Complete write-ups are excluded. | R1, R2 |
 | P3. Reference tools | Search, list, retrieve, and follow source-authored relationships. | R1, R2, R3 |
 | P4. Praxis tools | Map a challenge across source types, compare selected entries, and generate a discussion scaffold. | R2, R3, R4, R6 |
 | P5. Attribution envelope | Every result includes concise source, license, and adaptation metadata. | R5 |
@@ -45,7 +59,7 @@ new factual claims about the examples.
 |---|---|---|
 | `search_toolbox` | Find relevant material by phrase, type, or sector. | Ranked source excerpts with transparent match scores. |
 | `list_entries` | Browse the catalog without knowing search terms. | Compact entries filtered by source type or sector. |
-| `get_entry` | Read one source entry closely. | Full adapted text, authors, references, relationships, and source URL. |
+| `get_entry` | Inspect one source entry before close reading. | Source-authored summary, authors, references, relationships, and canonical URL for the complete entry. |
 | `get_related_entries` | Follow the toolbox's own conceptual graph. | Only relationships supplied by the source API. |
 | `map_challenge` | See a challenge through multiple toolbox lenses. | Ranked questions, values, principles, solutions, and stories; relevance is lexical, not a recommendation. |
 | `compare_entries` | Put several models or stories side by side. | Source fields and relationship counts, with no invented evaluation. |

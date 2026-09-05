@@ -63,7 +63,7 @@ export function createServer() {
 
   server.registerTool('get_entry', {
     title: 'Read a Beautiful Solutions Entry',
-    description: 'Get one complete adapted entry with authors, references, source relationships, canonical URL, and CC attribution.',
+    description: 'Get one source-authored summary with authors, references, source relationships, canonical URL, and CC attribution. Complete entry text remains at the canonical source.',
     inputSchema: {
       id: z.string().describe('Entry ID, such as bsol-community-land-trust'),
     },

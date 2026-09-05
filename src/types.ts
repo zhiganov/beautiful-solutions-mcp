@@ -27,7 +27,6 @@ export interface ToolboxEntry {
   title: string;
   sector?: string;
   summary: string;
-  body: string;
   authors: string[];
   authorBio?: string;
   guides: string[];

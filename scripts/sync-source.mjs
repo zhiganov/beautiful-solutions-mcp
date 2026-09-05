@@ -89,7 +89,6 @@ function normalizeEntry(slug, entry, indexEntry) {
     title: entry.title.trim(),
     sector: optionalText(entry.sector),
     summary: optionalText(entry.snapshot) ?? optionalText(indexEntry?.snapshot) ?? '',
-    body: optionalText(entry.write_up) ?? '',
     authors: textList(entry.authors),
     authorBio: optionalText(entry.authors_bio),
     guides: textList(entry.guides),
@@ -145,7 +144,7 @@ async function main() {
   );
   const sectors = [...new Set(entries.map(entry => entry.sector).filter(Boolean))].sort();
   const payload = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     work: 'Beautiful Solutions: A Toolbox for Liberation',
     language: 'en',
     entries,
@@ -153,7 +152,7 @@ async function main() {
   const payloadText = `${JSON.stringify(payload, null, 2)}\n`;
   const payloadHash = createHash('sha256').update(payloadText).digest('hex');
   const manifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     retrievedAt: new Date().toISOString(),
     source: {
       work: payload.work,
@@ -163,11 +162,12 @@ async function main() {
       toolboxUrl: TOOLBOX_URL,
       apiIndexUrl: INDEX_URL,
     },
-    selection: 'English API entries whose source type begins with bsol-. Images and image captions excluded.',
+    selection: 'English API entries whose source type begins with bsol-. Source-authored snapshots and structural metadata retained; full write-ups, images, and image captions excluded.',
     changes: [
       'Reshaped source fields into a stable JSON schema.',
       'Normalized line endings and trimmed surrounding whitespace.',
       'Converted relationship keys into normalized types and canonical source URLs.',
+      'Excluded full entry write-ups; retained concise source-authored snapshots and canonical links for reading the complete entries.',
       'Excluded images and image captions.',
     ],
     license: {
