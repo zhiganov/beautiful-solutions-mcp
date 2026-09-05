@@ -123,9 +123,16 @@ The explicit sync script:
 
 - selects entries whose official API type begins with `bsol-`;
 - validates and reshapes source fields;
+- writes complete text to the ignored `.source-cache/` directory for
+  build-time analysis;
 - retains concise source-authored snapshots and excludes complete write-ups;
 - excludes images and image captions;
 - writes `src/data/toolbox.json` and a source manifest with a SHA-256 hash.
+
+The source cache is deliberately excluded from Git, the npm package, and MCP
+runtime loading. It can support later method extraction, search evaluation, or
+source-drift review without sending the full corpus to an MCP client. Running
+`npm run sync-source` recreates it from the official API.
 
 The runtime rechecks that hash through `get_source_info`. A matching hash shows
 that the tracked snapshot has not changed since the manifest was written; it

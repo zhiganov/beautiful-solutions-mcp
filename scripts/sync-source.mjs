@@ -9,6 +9,7 @@ const TOOLBOX_URL = 'https://beautifultrouble.org/toolbox/bsol';
 const LICENSE_URL = 'https://creativecommons.org/licenses/by-nc-sa/4.0/';
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = resolve(projectRoot, 'src/data');
+const sourceCacheDir = resolve(projectRoot, '.source-cache');
 
 async function getJson(url) {
   const response = await fetch(url, {
@@ -89,6 +90,7 @@ function normalizeEntry(slug, entry, indexEntry) {
     title: entry.title.trim(),
     sector: optionalText(entry.sector),
     summary: optionalText(entry.snapshot) ?? optionalText(indexEntry?.snapshot) ?? '',
+    body: optionalText(entry.write_up) ?? '',
     authors: textList(entry.authors),
     authorBio: optionalText(entry.authors_bio),
     guides: textList(entry.guides),
@@ -131,11 +133,12 @@ async function main() {
 
   if (slugs.length === 0) throw new Error('Official index contained no Beautiful Solutions entries');
 
-  const entries = await mapWithConcurrency(slugs, 6, async slug => {
+  const sourceEntries = await mapWithConcurrency(slugs, 6, async slug => {
     const source = await getJson(`${API_BASE}/${slug}.json`);
     return normalizeEntry(slug, source, index.tools[slug]);
   });
-  entries.sort((a, b) => a.title.localeCompare(b.title, 'en'));
+  sourceEntries.sort((a, b) => a.title.localeCompare(b.title, 'en'));
+  const entries = sourceEntries.map(({ body: _body, ...entry }) => entry);
 
   const countsByType = Object.fromEntries(
     [...new Set(entries.map(entry => entry.type))]
@@ -151,9 +154,18 @@ async function main() {
   };
   const payloadText = `${JSON.stringify(payload, null, 2)}\n`;
   const payloadHash = createHash('sha256').update(payloadText).digest('hex');
+  const sourcePayload = {
+    schemaVersion: 1,
+    work: payload.work,
+    language: payload.language,
+    entries: sourceEntries,
+  };
+  const sourcePayloadText = `${JSON.stringify(sourcePayload, null, 2)}\n`;
+  const sourcePayloadHash = createHash('sha256').update(sourcePayloadText).digest('hex');
+  const retrievedAt = new Date().toISOString();
   const manifest = {
     schemaVersion: 2,
-    retrievedAt: new Date().toISOString(),
+    retrievedAt,
     source: {
       work: payload.work,
       publicationYear: 2024,
@@ -183,15 +195,30 @@ async function main() {
     },
     toolboxSha256: payloadHash,
   };
+  const sourceCacheManifest = {
+    schemaVersion: 1,
+    retrievedAt,
+    source: manifest.source,
+    selection: 'English API entries whose source type begins with bsol-. Full write-ups retained for build-time analysis; images and image captions excluded.',
+    license: manifest.license,
+    inventory: manifest.inventory,
+    toolboxSha256: sourcePayloadHash,
+  };
 
-  await mkdir(dataDir, { recursive: true });
+  await Promise.all([
+    mkdir(dataDir, { recursive: true }),
+    mkdir(sourceCacheDir, { recursive: true }),
+  ]);
   await Promise.all([
     writeFile(resolve(dataDir, 'toolbox.json'), payloadText, 'utf8'),
     writeFile(resolve(dataDir, 'source-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8'),
+    writeFile(resolve(sourceCacheDir, 'toolbox-full.json'), sourcePayloadText, 'utf8'),
+    writeFile(resolve(sourceCacheDir, 'source-manifest.json'), `${JSON.stringify(sourceCacheManifest, null, 2)}\n`, 'utf8'),
   ]);
 
   console.log(`Synced ${entries.length} entries (${Object.entries(countsByType).map(([type, count]) => `${count} ${type}`).join(', ')}).`);
   console.log(`Toolbox SHA-256: ${payloadHash}`);
+  console.log(`Build-time source cache SHA-256: ${sourcePayloadHash}`);
 }
 
 await main();

@@ -46,10 +46,15 @@ short quotations, relationships, sectors, and canonical URLs.
 
 This boundary is enforced in three places:
 
-- the sync script does not ingest the source `write_up` field;
+- the sync script keeps `write_up` only in an ignored build-time source cache
+  and excludes it from the tracked runtime dataset;
 - tests reject `body` and `write_up` fields in the tracked dataset; and
 - `get_entry` explicitly tells clients to use the canonical URL for complete
   reading.
+
+The ignored `.source-cache/` layer preserves full write-ups for future method
+extraction, retrieval evaluation, and source-drift analysis. It is not tracked,
+packaged, loaded by the server, or returned through MCP tools.
 
 ## Remaining product validation
 
