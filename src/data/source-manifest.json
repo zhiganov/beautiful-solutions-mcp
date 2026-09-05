@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "retrievedAt": "2026-09-05T14:59:44.634Z",
+  "source": {
+    "work": "Beautiful Solutions: A Toolbox for Liberation",
+    "publicationYear": 2024,
+    "editors": [
+      "Elandria Williams",
+      "Rachel Plattus",
+      "Eli Feghali",
+      "Nathan Schneider"
+    ],
+    "organization": "Beautiful Trouble",
+    "toolboxUrl": "https://beautifultrouble.org/toolbox/bsol",
+    "apiIndexUrl": "https://api.beautifultrouble.org/v2/en/toolbox-lite-minisearch.json"
+  },
+  "selection": "English API entries whose source type begins with bsol-. Images and image captions excluded.",
+  "changes": [
+    "Reshaped source fields into a stable JSON schema.",
+    "Normalized line endings and trimmed surrounding whitespace.",
+    "Converted relationship keys into normalized types and canonical source URLs.",
+    "Excluded images and image captions."
+  ],
+  "license": {
+    "id": "CC-BY-NC-SA-4.0",
+    "name": "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International",
+    "url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "statementUrl": "https://beautifultrouble.org/toolbox/bsol"
+  },
+  "inventory": {
+    "entries": 85,
+    "countsByType": {
+      "principle": 10,
+      "question": 8,
+      "solution": 27,
+      "story": 32,
+      "value": 8
+    },
+    "sectors": [
+      "Art, Culture & Spirit",
+      "Education",
+      "Finance",
+      "Food & Agriculture",
+      "Governance",
+      "Health",
+      "Justice & Safety",
+      "Land & Housing",
+      "Manufacturing",
+      "Media & Information",
+      "Utilities & Energy",
+      "Values"
+    ]
+  },
+  "toolboxSha256": "b7e730dc309483190b68c1980ba994966c0127520d679c7e06ca8b81f72b9163"
+}

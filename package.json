@@ -1,0 +1,36 @@
+{
+  "name": "mcp-beautiful-solutions",
+  "version": "0.1.0",
+  "description": "Source-grounded MCP tools for exploring Beautiful Solutions: A Toolbox for Liberation",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "mcp-beautiful-solutions": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "LICENSES.md",
+    "CONTENT-LICENSE.md",
+    "NOTICE.md",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc && node scripts/copy-data.mjs",
+    "start": "node dist/index.js",
+    "dev": "npm run build && npm start",
+    "test": "npm run build && node --test dist/**/*.test.js",
+    "sync-source": "node scripts/sync-source.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.3.0"
+  },
+  "license": "SEE LICENSE IN LICENSES.md"
+}
