@@ -123,8 +123,11 @@ npm test             # compile and run focused data, search, and MCP tests
 The extraction pilot is development tooling, not part of the MCP runtime. It
 requires `OPENAI_API_KEY` in the process environment or in ignored
 `.private/openai.env`; the optional `OPENAI_EXTRACTION_MODEL` defaults to
-`gpt-5-mini`. It writes resumable caches and method cards only under ignored
-`.source-cache/`. The current pilot is **not accepted for full-corpus use**;
+`gpt-5-mini`, while `OPENAI_VERIFICATION_MODEL` defaults to the distinct
+`gpt-5.4-mini`. It writes resumable caches and method cards only under ignored
+`.source-cache/`. The verifier records support, reclassification, removal, and
+deduplication decisions without rewriting candidate claims. The current pilot
+is **not accepted for full-corpus use**;
 see [`docs/reviews/2026-09-05-gpt-extraction-pilot.md`](docs/reviews/2026-09-05-gpt-extraction-pilot.md).
 
 The explicit sync script:

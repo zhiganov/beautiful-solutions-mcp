@@ -3,16 +3,18 @@
 ## Verdict
 
 **Not accepted for full-corpus extraction.** GPT-5 Mini produced substantially
-better method depth than GPT-5 Nano, and the final five cards passed structural
-and exact-citation gates. Manual review still found two taxonomy errors that
-would mislead application: Social Cooperatives treated government-contract
-revenue as an implementation constraint even though the source states it as a
-fact, and Artist and Freelancer Co-ops treated the precarious work the model
-responds to as a constraint on the model.
+better method depth than GPT-5 Nano, and the five candidate cards passed
+structural and exact-citation gates. A separate semantic verifier correctly
+found the two known taxonomy errors, but a same-model verifier also approved
+unsupported inferences. A distinct GPT-5.4 Mini verifier caught more of those
+inferences and then rejected the Remunicipalization card because only one
+generated transfer question survived.
 
-The next gate is an independent semantic verification pass that can reject or
-reclassify claims whose evidence exists but does not support the assigned
-field. Do not process all 85 entries until the same five cards pass that gate.
+The stop is appropriate: repeating verification cannot repair a rejected
+candidate because the verifier is forbidden to rewrite claims. The next gate
+is an explicit regeneration loop that sends recorded verifier decisions back
+to the extractor and preserves both candidate versions. Do not process all 85
+entries until the same five cards pass that loop and manual review.
 
 ## Scope and boundaries
 
@@ -94,20 +96,53 @@ harness instructs the model not to manufacture them by juxtaposing facts.
 | Semantic field fidelity | **Fail** | Two of five final cards misclassified problem or funding context as implementation constraints. |
 | Full-corpus readiness | **Fail** | Mechanical citation checks cannot prove that cited evidence entails a generated claim or that its category is correct. |
 
+## Semantic-verifier experiment
+
+The first independent request pass used the same `gpt-5-mini` model as the
+extractor. It classified every candidate item without rewriting claims,
+correctly reclassified the Social Cooperatives government-contract item and
+the Artist and Freelancer Co-ops precarity item, and exposed a deterministic
+application issue: moving the government-contract claim duplicated an existing
+enabling condition. The application layer now removes reclassified duplicates
+when their exact evidence set is already present and records the deduplication.
+
+Manual review found correlated false approvals. The verifier accepted inferred
+government support as a land-trust enabling condition and inferred municipal
+legal capacity as a remunicipalization enabling condition. Extraction and
+verification were therefore separated: `gpt-5-mini` remains the candidate
+extractor and `gpt-5.4-mini` is the default verifier.
+
+The distinct verifier removed two Community Land Trust items: the inferred
+government-support condition and a transfer question that introduced
+homeowner wealth-building, which the source does not mention. On
+Remunicipalization it removed seven items, including both inferred enabling
+conditions and two transfer questions with unsupported premises. Only one
+transfer question remained, so the card failed the minimum application-depth
+gate. The harness now stops immediately in that state rather than retrying a
+verifier that cannot create replacements.
+
+The verifier also produced at least one conservative false negative: it
+removed the mechanism describing contract termination and return to public
+management even though those elements are supported across separate source
+sentences. Verification therefore improves precision but is not yet a
+calibrated judge. Manual labels for these five entries are still required.
+
 ## Usage accounting note
 
-The ignored cache contains 43,151 tokens of captured development calls across
-the Nano and Mini comparisons. Six earlier rejected Nano attempts used an
-initial harness revision that did not persist response usage, so cumulative
-pilot usage cannot be reconstructed exactly. The final Mini run's 19,086-token
-measurement is complete. No cost estimate is asserted here.
+The extraction comparison used 43,151 captured tokens. The same-model
+verification comparison used 36,426, and the bounded distinct-verifier tests
+used 26,897, for 106,474 captured development tokens overall. Six earlier
+rejected Nano attempts used an initial harness revision that did not persist
+response usage, so cumulative pilot usage cannot be reconstructed exactly.
+Attempt logs now use unique filenames so a rerun cannot overwrite prior usage
+or rejection evidence. No cost estimate is asserted here.
 
 ## Required next experiment
 
-Add a separate strict-schema verification pass over each candidate card and
-its numbered source sentences. The verifier must classify every item as
-supported in its assigned field, supported but misclassified, or unsupported;
-it must not rewrite claims silently. Reclassifications and removals should be
-recorded as adaptation changes. Rerun these five entries, manually inspect the
-verifier's decisions, and only then decide whether to process the 85-entry
-corpus.
+Create manual expected decisions for the five pilot entries, then add an
+explicit regeneration loop. When verification removes or reclassifies enough
+items to fail depth, pass the recorded decisions to a fresh extraction request;
+do not ask the verifier to invent replacements. Preserve the original card,
+verifier decisions, regenerated card, and second verification as separate
+artifacts. Only proceed to the 85-entry corpus if the regenerated cards pass
+the mechanical checks and the verifier agrees with the manual labels.
