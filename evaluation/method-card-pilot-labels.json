@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "kind": "Manual sentinel labels for the five-entry method-card pilot",
+  "sourceSha256": "b7e730dc309483190b68c1980ba994966c0127520d679c7e06ca8b81f72b9163",
+  "candidatePromptVersion": "method-card-v4-problem-context",
+  "labels": [
+    {
+      "entryId": "bsol-community-land-trust",
+      "itemId": "oneSentence",
+      "itemText": "A community land trust is a nonprofit model of shared land ownership and long-term leasing that preserves affordable homeownership and treats land as a stewarded social resource.",
+      "expectedVerdict": "unsupported",
+      "expectedTargetField": "remove",
+      "note": "The source separates nonprofit land ownership from building ownership; calling the legal ownership shared is materially ambiguous.",
+      "itemFingerprint": "c4bae3d2c59ec364550acea2f75eb0f5d45b59bf6e537c6f1e42853af024a194"
+    },
+    {
+      "entryId": "bsol-community-land-trust",
+      "itemId": "enablingConditions.2",
+      "itemText": "Support from local and national governments can enable CLTs to meet affordable housing goals.",
+      "expectedVerdict": "unsupported",
+      "expectedTargetField": "remove",
+      "note": "Examples of governments using CLTs do not establish government support as an enabling condition.",
+      "itemFingerprint": "5421e79ac85569a22c2bfb2271fbca05ebfbdeffdb4077ac68f80e106776fd63"
+    },
+    {
+      "entryId": "bsol-community-land-trust",
+      "itemId": "transferQuestions.2",
+      "itemText": "What lease restriction designs and resale-cap formulas have been used to balance long-term affordability with homeowners' ability to build wealth?",
+      "expectedVerdict": "unsupported",
+      "expectedTargetField": "remove",
+      "note": "The source discusses affordability but does not introduce homeowner wealth-building as the other side of a balance.",
+      "itemFingerprint": "68999afbaa29877d48ef0ea77cfcf4be2605dfae63753a6aaaedce34bb2641a0"
+    },
+    {
+      "entryId": "bsol-limited-equity-housing-cooperatives",
+      "itemId": "mechanisms.1",
+      "itemText": "Resale value of shares is capped so sellers receive only a limited gain (purchase price plus capped interest), preventing speculative price increases.",
+      "expectedVerdict": "supported",
+      "expectedTargetField": "mechanisms",
+      "note": "The source explicitly describes capped resale value as the anti-speculation mechanism.",
+      "itemFingerprint": "2830ad7d0c18da75ddfd9bff7edb545ef7edc0d39fecf0eaef3fe9ad44007fb0"
+    },
+    {
+      "entryId": "bsol-limited-equity-housing-cooperatives",
+      "itemId": "constraints.0",
+      "itemText": "High upfront costs and lengthy development timelines (about five years) to establish a LEHC.",
+      "expectedVerdict": "supported",
+      "expectedTargetField": "constraints",
+      "note": "The source explicitly names heavy upfront costs and the five-year path to occupancy.",
+      "itemFingerprint": "59d4e594a09283eddf6ca1e49fbc858f754239a849a2d91e3d1ba10f26772c9c"
+    },
+    {
+      "entryId": "bsol-social-cooperatives",
+      "itemId": "constraints.0",
+      "itemText": "Reliance on government contracts for most revenue.",
+      "expectedVerdict": "unsupported",
+      "expectedTargetField": "remove",
+      "note": "The source states where revenue comes from; the candidate's word 'reliance' adds an unstated dependency and constraint framing.",
+      "itemFingerprint": "073c3b98000d9cba639bdb2c648806c53897a8c79ac14b5ae115fbcb9398055a"
+    },
+    {
+      "entryId": "bsol-remunicipalization",
+      "itemId": "mechanisms.0",
+      "itemText": "Terminating private contracts and bringing service management back under municipal or public companies.",
+      "expectedVerdict": "supported",
+      "expectedTargetField": "mechanisms",
+      "note": "The claim is supported across the definition, contract-termination sentence, and municipal-company examples.",
+      "itemFingerprint": "6e59ded2b757327db00fc43a800f9a449b49d1b8be37349fd66eb7ac97dadf1b"
+    },
+    {
+      "entryId": "bsol-remunicipalization",
+      "itemId": "enablingConditions.0",
+      "itemText": "Sustained citizen mobilization and political will to pursue remunicipalization.",
+      "expectedVerdict": "unsupported",
+      "expectedTargetField": "remove",
+      "note": "Citizen mobilization is explicit, but the composite claim adds political will as a condition.",
+      "itemFingerprint": "8391e9c7c3275ce2e3abc9e4cb8807b8947cb24186a797fa3e2adc1fd520bb63"
+    },
+    {
+      "entryId": "bsol-remunicipalization",
+      "itemId": "enablingConditions.1",
+      "itemText": "Legal and institutional capacity at municipal level to establish and operate public companies.",
+      "expectedVerdict": "unsupported",
+      "expectedTargetField": "remove",
+      "note": "The source gives municipal examples but does not state this abstract capacity condition.",
+      "itemFingerprint": "981ae28b7ba4127bfa994df6d3f476ee3c6d236011ae647ff4d97474f13fe106"
+    },
+    {
+      "entryId": "bsol-remunicipalization",
+      "itemId": "observableSignals.0",
+      "itemText": "Termination or reversal of private contracts and re-establishment of public management in utilities.",
+      "expectedVerdict": "supported",
+      "expectedTargetField": "observableSignals",
+      "note": "The definition and cases establish both ending private control and restoring public management.",
+      "itemFingerprint": "e2ebc1ac00d365b611bfe0e2499965fcee3103436666be6622a7f57605f9f7bf"
+    },
+    {
+      "entryId": "bsol-remunicipalization",
+      "itemId": "transferQuestions.0",
+      "itemText": "How have municipal companies structured tariff reforms to guarantee minimum service while maintaining financial sustainability?",
+      "expectedVerdict": "unsupported",
+      "expectedTargetField": "remove",
+      "note": "The source does not establish that the cited tariff reforms maintained financial sustainability.",
+      "itemFingerprint": "0e65a16aca553b07006b6b098a58e69df5b5cc3b3e9b87d41747a00135c51802"
+    },
+    {
+      "entryId": "bsol-remunicipalization",
+      "itemId": "transferQuestions.1",
+      "itemText": "What legal strategies have municipalities used to limit compensation liabilities when terminating private contracts prematurely?",
+      "expectedVerdict": "unsupported",
+      "expectedTargetField": "remove",
+      "note": "The question presupposes successful liability-limiting strategies that the source does not report.",
+      "itemFingerprint": "db816d8a10a91723e6bb461192474f720eebfdcb4edf8b0591239f9362fb5d2c"
+    },
+    {
+      "entryId": "bsol-artist-and-freelancer-co-ops-in-europe",
+      "itemId": "constraints.0",
+      "itemText": "Artists face economic challenges due to precarious conditions that necessitate cooperative responses.",
+      "expectedVerdict": "unsupported",
+      "expectedTargetField": "remove",
+      "note": "The source supports the economic challenge as problem context but does not say it necessitates a cooperative response; the unchanged composite claim fits no field.",
+      "itemFingerprint": "98debcbd9788c173a8f553865d2a5eec4a26cd05069a3bfbcc9d950effc907e8"
+    },
+    {
+      "entryId": "bsol-artist-and-freelancer-co-ops-in-europe",
+      "itemId": "transferQuestions.1",
+      "itemText": "What governance structures do multi-stakeholder cooperatives use to balance the interests of workers, investors, and other stakeholders?",
+      "expectedVerdict": "unsupported",
+      "expectedTargetField": "remove",
+      "note": "The source says workers are co-investors; it does not establish separate investor and worker constituencies requiring balance.",
+      "itemFingerprint": "ce4ea3aaf31f84b370fd52b54bd0945f42160385c91262b9b9dca6bd4e500435"
+    },
+    {
+      "entryId": "bsol-remunicipalization",
+      "itemId": "transferQuestions.0",
+      "itemText": "What strategies have citizens and municipal actors used to organize referendums that led to remunicipalization in different legal contexts?",
+      "expectedVerdict": "unsupported",
+      "expectedTargetField": "remove",
+      "note": "The source establishes citizen-organized referendums, but not municipal actors organizing them; the composite question adds an unsupported actor premise.",
+      "itemFingerprint": "4c921c56c0bc9fc6b9d429a1fac4154a400abb246476c40c50847c487c4544c3"
+    },
+    {
+      "entryId": "bsol-remunicipalization",
+      "itemId": "transferQuestions.1",
+      "itemText": "How have municipal companies structured tariff reforms to guarantee a defined minimum allocation or discounts for vulnerable households?",
+      "expectedVerdict": "supported",
+      "expectedTargetField": "transferQuestions",
+      "note": "The source gives two municipal tariff and minimum-allocation designs; asking how such designs are structured is an open comparative inquiry.",
+      "itemFingerprint": "9287ece65fe388e85d63507d7ab17c791f61840c1746d566f2b7e154be2f90bd"
+    },
+    {
+      "entryId": "bsol-remunicipalization",
+      "itemId": "enablingConditions.1",
+      "itemText": "Existing legal and contractual frameworks that allow termination of private contracts (occasionally before expiry) are the context in which remunicipalization occurs.",
+      "expectedVerdict": "unsupported",
+      "expectedTargetField": "remove",
+      "note": "The source reports contract termination and its risks but does not establish an enabling legal framework that allows termination.",
+      "itemFingerprint": "9b672d80d89f3753cbf71e80b7bf20d287f21b4a001ec99d316c7e686e47df4d"
+    },
+    {
+      "entryId": "bsol-remunicipalization",
+      "itemId": "enablingConditions.2",
+      "itemText": "Municipal authority to create public companies to run services after remunicipalization.",
+      "expectedVerdict": "unsupported",
+      "expectedTargetField": "remove",
+      "note": "A municipal-company example does not establish abstract legal authority as an enabling condition.",
+      "itemFingerprint": "3cbdcee59865fccbffca415a380544e8d5d1885255483a06e0d87303ec935d1f"
+    }
+  ],
+  "candidateModel": "gpt-5-mini"
+}

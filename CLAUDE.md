@@ -29,11 +29,19 @@ src/
 scripts/
   sync-source.mjs     official API ingestion and validation
   copy-data.mjs       copies runtime JSON into dist
+  extract-method-cards.mjs
+                       optional build-time GPT extraction, verification,
+                       adjudication, and bounded regeneration
+evaluation/
+  method-card-pilot-labels.json
+                       source-derived manual sentinel decisions
 ```
 
 No LLM, database, vector store, or network call is used at runtime. The
 official Beautiful Trouble API is contacted only by the explicit source-sync
-script.
+script. The optional method-card extraction script uses OpenAI only at build
+time and writes generated artifacts under ignored `.source-cache/`; it does
+not change the deterministic runtime boundary.
 
 ## Source and licensing
 
