@@ -1,9 +1,12 @@
 import type { EntryType, ToolboxEntry } from './types.js';
 
 const STOP_WORDS = new Set([
-  'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'do', 'for', 'from', 'how',
-  'i', 'in', 'is', 'it', 'of', 'on', 'or', 'our', 'that', 'the', 'their', 'to',
-  'we', 'what', 'when', 'where', 'which', 'who', 'with', 'you', 'your',
+  'a', 'all', 'also', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by', 'can',
+  'could', 'do', 'for', 'from', 'get', 'give', 'have', 'how', 'i', 'in', 'is',
+  'it', 'keep', 'many', 'more', 'most', 'much', 'need', 'of', 'on', 'or', 'our',
+  'over', 'rather', 'should', 'than', 'that', 'the', 'their', 'they', 'to',
+  'under', 'us', 'want', 'wants', 'way', 'we', 'what', 'when', 'where', 'which',
+  'who', 'will', 'with', 'would', 'you', 'your',
 ]);
 
 function normalize(value: string): string {
@@ -41,6 +44,7 @@ export interface SearchFilters {
   sector?: string;
   limit?: number;
   relatedBoostIds?: Set<string>;
+  minDirectMatches?: number;
 }
 
 export interface SearchResult {
@@ -61,28 +65,34 @@ export function searchEntries(entries: ToolboxEntry[], query: string, filters: S
   });
 
   const results = candidates.flatMap(entry => {
-    const fields = {
+    const directFields = {
       title: tokenSet(entry.title),
-      sector: tokenSet(entry.sector ?? ''),
       summary: tokenSet(entry.summary),
       people: tokenSet([...entry.authors, ...entry.guides].join(' ')),
+    };
+    const contextualFields = {
+      sector: tokenSet(entry.sector ?? ''),
       related: tokenSet(entry.related.map(item => `${item.title} ${item.summary ?? ''}`).join(' ')),
     };
-    const weights: Record<keyof typeof fields, number> = {
+    const directWeights: Record<keyof typeof directFields, number> = {
       title: 8,
-      sector: 5,
       summary: 4,
       people: 2,
+    };
+    const contextualWeights: Record<keyof typeof contextualFields, number> = {
+      sector: 5,
       related: 2,
     };
     let score = 0;
     const matchedFields: string[] = [];
+    const directMatchedTokens = new Set<string>();
 
-    for (const [fieldName, tokens] of Object.entries(fields) as [keyof typeof fields, Set<string>][]) {
+    for (const [fieldName, tokens] of Object.entries(directFields) as [keyof typeof directFields, Set<string>][]) {
       const matches = queryTokens.filter(token => tokens.has(token));
       if (matches.length > 0) {
-        score += matches.length * weights[fieldName];
+        score += matches.length * directWeights[fieldName];
         matchedFields.push(fieldName);
+        matches.forEach(token => directMatchedTokens.add(token));
       }
     }
 
@@ -91,12 +101,22 @@ export function searchEntries(entries: ToolboxEntry[], query: string, filters: S
     if (normalizedQuery.length > 2 && normalizedTitle.includes(normalizedQuery)) score += 14;
     else if (normalizedQuery.length > 4 && normalizedSummary.includes(normalizedQuery)) score += 6;
 
+    if (directMatchedTokens.size < (filters.minDirectMatches ?? 1)) return [];
+
+    for (const [fieldName, tokens] of Object.entries(contextualFields) as [keyof typeof contextualFields, Set<string>][]) {
+      const matches = queryTokens.filter(token => tokens.has(token));
+      if (matches.length > 0) {
+        score += matches.length * contextualWeights[fieldName];
+        matchedFields.push(fieldName);
+      }
+    }
+
     if (filters.relatedBoostIds?.has(entry.id)) {
       score += 6;
       matchedFields.push('source_relationship');
     }
 
-    return score > 0 ? [{ entry, score, matchedFields: [...new Set(matchedFields)] }] : [];
+    return [{ entry, score, matchedFields: [...new Set(matchedFields)] }];
   });
 
   return results

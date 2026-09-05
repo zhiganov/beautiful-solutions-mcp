@@ -19,6 +19,7 @@ Coalition, People's Hub, and Highlander Center.
 - Converted source relationship keys and slugs into consistent identifiers.
 - Retained concise source-authored snapshots and excluded complete entry
   write-ups; canonical links point readers to the full source entries.
+- Rejoined words split by source line-break hyphenation in runtime text fields.
 - Added deterministic search, comparison, challenge-mapping, and discussion
   scaffolds. These scaffolds do not add claims to the source entries.
 - Excluded images and image captions from redistribution.

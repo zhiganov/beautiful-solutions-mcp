@@ -125,7 +125,9 @@ The explicit sync script:
 - validates and reshapes source fields;
 - writes complete text to the ignored `.source-cache/` directory for
   build-time analysis;
-- retains concise source-authored snapshots and excludes complete write-ups;
+- retains concise source-authored snapshots, repairs source line-break
+  hyphenation in runtime text, and excludes complete write-ups from runtime
+  data;
 - excludes images and image captions;
 - writes `src/data/toolbox.json` and a source manifest with a SHA-256 hash.
 

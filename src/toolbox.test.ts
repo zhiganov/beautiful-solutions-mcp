@@ -13,6 +13,28 @@ import {
   searchToolbox,
 } from './toolbox.js';
 
+function collectDataProblems(value: unknown, path: string[] = []): string[] {
+  if (typeof value === 'string') {
+    const problems: string[] = [];
+    if (/squarespace-cdn/i.test(value)) problems.push(`${path.join('.')}: bundled image URL`);
+    if (/\b(?:import|hous|commu|ad|manage|cre|pri|form|community|fam|sup|co|pub|prevent|na|con|member|Catholic|BY|poultry|worker|to|farmer|award|non|Whānganui|Philippine)-\s+/.test(value)) {
+      problems.push(`${path.join('.')}: split word`);
+    }
+    return problems;
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) => collectDataProblems(item, [...path, String(index)]));
+  }
+  if (value && typeof value === 'object') {
+    return Object.entries(value).flatMap(([key, item]) => {
+      const itemPath = [...path, key];
+      if (/^(?:body|write_up|image|image_caption)$/.test(key)) return [`${itemPath.join('.')}: forbidden field`];
+      return collectDataProblems(item, itemPath);
+    });
+  }
+  return [];
+}
+
 describe('source snapshot', () => {
   it('contains the complete validated English index without full write-ups', () => {
     assert.equal(TOOLBOX.entries.length, 85);
@@ -26,8 +48,7 @@ describe('source snapshot', () => {
     assert.ok(TOOLBOX.entries.every(entry => entry.id && entry.title && entry.summary && entry.sourceUrl));
     const ids = new Set(TOOLBOX.entries.map(entry => entry.id));
     assert.ok(TOOLBOX.entries.every(entry => entry.related.every(related => ids.has(related.id))));
-    assert.doesNotMatch(JSON.stringify(TOOLBOX), /"body"|"write_up"/);
-    assert.doesNotMatch(JSON.stringify(TOOLBOX), /"image(?:_caption)?"|squarespace-cdn/i);
+    assert.deepEqual(collectDataProblems(TOOLBOX), []);
   });
 
   it('matches the structural integrity hash in the manifest', () => {
@@ -43,6 +64,14 @@ describe('reference tools', () => {
     assert.ok(response.result.entries.slice(0, 5).some(entry => entry.id === 'bsol-community-land-trust'));
     assert.equal(response.result.entries[0]?.id, 'bsol-limited-equity-housing-cooperatives');
     assert.equal(response.attribution.license, 'CC-BY-NC-SA-4.0');
+  });
+
+  it('does not admit entries on relationship metadata alone', () => {
+    const response = searchToolbox('permanently affordable resident governed housing', {
+      type: 'question',
+    });
+    assert.equal(response.result.entries.some(entry =>
+      entry.id === 'bsol-how-do-we-relate-to-the-borders-drawn-by-colonialism-and-empire-and-to-peoples-need-to-move-across-them-'), false);
   });
 
   it('returns entry provenance and source-authored relationships', () => {
@@ -96,6 +125,11 @@ describe('praxis tools', () => {
     );
     assert.match(guide.result.generatedNotice, /not quotations/i);
     assert.equal(guide.result.readings[0]?.id, 'bsol-community-land-trust');
+    assert.equal(
+      guide.result.flow[0]?.prompts[0],
+      'What do current arrangements fail to provide in this context: neighborhood housing coalition?',
+    );
+    assert.equal(guide.result.sourceLinkedQuestions.length, 0);
     assert.ok(guide.result.flow.length >= 4);
   });
 });

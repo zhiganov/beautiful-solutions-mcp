@@ -153,3 +153,45 @@ fails against the richer structured catalog.
 source fidelity, and epistemic boundaries are strong. Literal discovery is
 promising. Cross-domain relevance, comparison depth, and discussion-guide
 grounding need correction before a release claim.
+
+## Retest after deterministic repairs
+
+The same scenarios were rerun after separating direct lexical evidence from
+relationship and sector boosts, expanding the stop-word set, filtering guide
+lenses by their own text, repairing context insertion, and normalizing source
+line-break hyphenation across runtime text.
+
+**Resolved**
+
+- Relationship metadata alone can no longer admit an entry into search or a
+  challenge map.
+- The unrelated colonial-borders question and Nepal forestry story no longer
+  appear in the housing map.
+- A guide now omits unsupported question/value lenses instead of presenting a
+  weak source relationship as contextually relevant.
+- The context prompt is grammatical for both articled and unarticled context
+  phrases.
+- Known split-word artifacts are absent from runtime fields and protected by a
+  regression test.
+
+**Still failing**
+
+- Two generic direct token matches can still outweigh domain fit. The housing
+  map returned Participatory Budgeting and Recuperated Factories after
+  Community Land Trust.
+- The gig-worker map found the relevant Artist and Freelancer Co-ops story but
+  still ranked land trusts, housing cooperatives, and public pharmaceuticals
+  as solutions.
+- The renewable-energy map did not foreground Remunicipalization and instead
+  led with land trusts, broadband, and sports-team ownership.
+- Plain-language searches for resident-owned homes, worker-owned apps, and
+  community solar still have weak first-page precision.
+- Comparison and discussion depth remain unchanged because concise snapshots
+  do not contain the required mechanisms, conditions, constraints, and
+  tensions.
+
+**Retest verdict:** deterministic defects are repaired and misleading lens
+fill is removed, but the MCP remains **not accepted for practitioner
+application**. The remaining failures are not well served by more stop-word or
+weight tuning over short snapshots. The next justified step is richer
+build-time method extraction, followed by the same acceptance suite.

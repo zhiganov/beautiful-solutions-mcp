@@ -20,6 +20,7 @@
     "Normalized line endings and trimmed surrounding whitespace.",
     "Converted relationship keys into normalized types and canonical source URLs.",
     "Excluded full entry write-ups; retained concise source-authored snapshots and canonical links for reading the complete entries.",
+    "Rejoined source line-break hyphenation in runtime text fields.",
     "Excluded images and image captions."
   ],
   "license": {
@@ -52,5 +53,5 @@
       "Values"
     ]
   },
-  "toolboxSha256": "ee7014e87a98bbc866eb206b681256db696a8544d2ea688206236c8505d90795"
+  "toolboxSha256": "aff27c908c09aa1ade471c8042c6c8e255c1afbc1b90bbe0b888b0ef5081c56f"
 }

@@ -31,6 +31,56 @@ function textList(value) {
     : [];
 }
 
+const SNAPSHOT_DEHYPHENATION = new Map([
+  ['import- ant', 'important'],
+  ['hous- ing', 'housing'],
+  ['commu- nities', 'communities'],
+  ['commu- nity', 'community'],
+  ['ad- opted', 'adopted'],
+  ['manage- ment', 'management'],
+  ['cre- ation', 'creation'],
+  ['pri- vacy', 'privacy'],
+  ['form- ing', 'forming'],
+  ['community- based', 'community-based'],
+  ['fam- ilies', 'families'],
+  ['sup- ply', 'supply'],
+  ['co- operative', 'cooperative'],
+  ['sup- port', 'support'],
+  ['pub- lic', 'public'],
+  ['prevent- ed', 'prevented'],
+  ['na- tional', 'national'],
+  ['con- trol', 'control'],
+  ['member- owner', 'member-owner'],
+  ['Catholic- run', 'Catholic-run'],
+  ['BY- NC-SA', 'BY-NC-SA'],
+  ['poultry- processing', 'poultry-processing'],
+  ['worker- owner', 'worker-owner'],
+  ['to- subject', 'to-subject'],
+  ['farmer- operator', 'farmer-operator'],
+  ['award- winning', 'award-winning'],
+  ['non- profit', 'non-profit'],
+  ['co- executive', 'co-executive'],
+  ['Whānganui- a-Tara', 'Whānganui-a-Tara'],
+  ['Philippine- based', 'Philippine-based'],
+]);
+
+function normalizeRuntimeText(value) {
+  let normalized = value;
+  for (const [source, replacement] of SNAPSHOT_DEHYPHENATION) {
+    normalized = normalized.replaceAll(source, replacement);
+  }
+  return normalized;
+}
+
+function normalizeRuntimeValue(value) {
+  if (typeof value === 'string') return normalizeRuntimeText(value);
+  if (Array.isArray(value)) return value.map(normalizeRuntimeValue);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, normalizeRuntimeValue(item)]));
+  }
+  return value;
+}
+
 function normalizeType(value) {
   if (typeof value !== 'string') return 'unknown';
   return value.replace(/^bsol-/, '');
@@ -138,7 +188,7 @@ async function main() {
     return normalizeEntry(slug, source, index.tools[slug]);
   });
   sourceEntries.sort((a, b) => a.title.localeCompare(b.title, 'en'));
-  const entries = sourceEntries.map(({ body: _body, ...entry }) => entry);
+  const entries = sourceEntries.map(({ body: _body, ...entry }) => normalizeRuntimeValue(entry));
 
   const countsByType = Object.fromEntries(
     [...new Set(entries.map(entry => entry.type))]
@@ -180,6 +230,7 @@ async function main() {
       'Normalized line endings and trimmed surrounding whitespace.',
       'Converted relationship keys into normalized types and canonical source URLs.',
       'Excluded full entry write-ups; retained concise source-authored snapshots and canonical links for reading the complete entries.',
+      'Rejoined source line-break hyphenation in runtime text fields.',
       'Excluded images and image captions.',
     ],
     license: {

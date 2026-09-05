@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { ATTRIBUTION, SOURCE_MANIFEST, TOOLBOX, attributed } from './data.js';
-import { searchEntries } from './search.js';
+import { searchEntries, tokenize } from './search.js';
 import type { EntryType, ToolboxEntry } from './types.js';
 
 const entries = TOOLBOX.entries;
@@ -82,7 +82,12 @@ export function getRelatedEntries(id: string, type?: EntryType) {
 }
 
 export function mapChallenge(challenge: string, options: { sector?: string; maxPerType?: number } = {}) {
-  const seedResults = searchEntries(entries, challenge, { sector: options.sector, limit: 5 });
+  const minDirectMatches = tokenize(challenge).length >= 4 ? 2 : 1;
+  const seedResults = searchEntries(entries, challenge, {
+    sector: options.sector,
+    limit: 5,
+    minDirectMatches,
+  });
   const relatedBoostIds = new Set(seedResults.flatMap(result => result.entry.related.map(item => item.id)));
   const maxPerType = options.maxPerType ?? 3;
   const lenses = Object.fromEntries(
@@ -92,6 +97,7 @@ export function mapChallenge(challenge: string, options: { sector?: string; maxP
         sector: type === 'solution' || type === 'story' ? options.sector : undefined,
         limit: maxPerType,
         relatedBoostIds,
+        minDirectMatches,
       });
       return [type, matches.map(({ entry, score, matchedFields }) => ({
         ...compact(entry),
@@ -131,22 +137,35 @@ function uniqueCompact(items: ToolboxEntry[]) {
   return [...new Map(items.map(item => [item.id, item])).values()].map(compact);
 }
 
+function contextualLenses(candidates: ToolboxEntry[], type: EntryType, context?: string) {
+  const selectedType = candidates.filter(entry => entry.type === type);
+  if (!context) return uniqueCompact(selectedType).slice(0, 5);
+  return searchEntries(selectedType, context, { limit: 5 }).map(({ entry }) => compact(entry));
+}
+
 export function buildDiscussionGuide(ids: string[], context?: string) {
   const selected = [...new Set(ids)].map(requireEntry);
   const linked = selected.flatMap(entry => entry.related.map(item => byId.get(item.id)).filter(Boolean) as ToolboxEntry[]);
-  const questions = uniqueCompact([
+  const questionCandidates = [
     ...selected.filter(entry => entry.type === 'question'),
     ...linked.filter(entry => entry.type === 'question'),
-  ]).slice(0, 5);
-  const values = uniqueCompact([
+  ];
+  const valueCandidates = [
     ...selected.filter(entry => entry.type === 'value'),
     ...linked.filter(entry => entry.type === 'value'),
-  ]).slice(0, 5);
+  ];
+  const questions = contextualLenses(questionCandidates, 'question', context);
+  const values = contextualLenses(valueCandidates, 'value', context);
+  const lensPrompts = [
+    ...questions.map(entry => entry.title),
+    ...values.map(entry => `How would “${entry.title}” change the choices we make?`),
+  ];
 
   return attributed({
     title: 'Beautiful Solutions discussion scaffold',
     context,
     generatedNotice: 'Prompts below are original scaffolding generated from selected source titles and relationships; they are not quotations from the book.',
+    lensNotice: 'Source-linked questions and values are included only when their own title or summary matches the supplied context. Empty lists mean no contextual source match was found.',
     readings: selected.map(compact),
     sourceLinkedQuestions: questions,
     sourceLinkedValues: values,
@@ -154,7 +173,9 @@ export function buildDiscussionGuide(ids: string[], context?: string) {
       {
         phase: 'Locate the challenge',
         prompts: [
-          `What does ${context ? `the ${context} context` : 'our context'} need that current arrangements do not provide?`,
+          context
+            ? `What do current arrangements fail to provide in this context: ${context}?`
+            : 'What does our context need that current arrangements do not provide?',
           'Who experiences the problem most directly, and whose knowledge is missing from the room?',
         ],
       },
@@ -169,13 +190,10 @@ export function buildDiscussionGuide(ids: string[], context?: string) {
           'What harms could come from copying the form without the underlying relationships?',
         ],
       },
-      {
+      ...(lensPrompts.length > 0 ? [{
         phase: 'Use the toolbox lenses',
-        prompts: [
-          ...questions.map(entry => entry.title),
-          ...values.map(entry => `How would “${entry.title}” change the choices we make?`),
-        ],
-      },
+        prompts: lensPrompts,
+      }] : []),
       {
         phase: 'Choose a learning step',
         prompts: [
