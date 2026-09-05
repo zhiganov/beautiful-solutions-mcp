@@ -124,12 +124,14 @@ The extraction pilot is development tooling, not part of the MCP runtime. It
 requires `OPENAI_API_KEY` in the process environment, the sibling Book Power
 repo's ignored `.env`, or this repo's ignored `.private/openai.env`; the
 optional `OPENAI_EXTRACTION_MODEL` defaults to `gpt-5-mini`, while
-`OPENAI_VERIFICATION_MODEL` defaults to the distinct `gpt-5.4-mini`. It writes
-resumable caches and method cards only under ignored `.source-cache/`. The
-verifier records support, reclassification, removal, and deduplication
+`OPENAI_VERIFICATION_MODEL` defaults to the distinct `gpt-5.4-mini`. The pilot
+fixture pins `OPENAI_EXTRACTION_MODEL` to `gpt-5-mini`; testing another
+extractor requires a newly reviewed fixture that names that model. The script
+writes resumable caches and method cards only under ignored `.source-cache/`.
+The verifier records support, reclassification, removal, and deduplication
 decisions without rewriting candidate claims. The five-entry calibrated pilot
-is accepted for bounded full-corpus extraction; runtime integration remains a
-separate gate. See
+is accepted; implementing full-corpus extraction and integrating cards into
+runtime tools remain separate gates. See
 [`docs/reviews/2026-09-05-gpt-extraction-pilot.md`](docs/reviews/2026-09-05-gpt-extraction-pilot.md).
 
 The explicit sync script:

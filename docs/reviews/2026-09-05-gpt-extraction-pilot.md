@@ -2,13 +2,14 @@
 
 ## Verdict
 
-**Accepted for bounded full-corpus extraction, but not yet for runtime
-integration.** GPT-5 Mini produced substantially better method depth than
-GPT-5 Nano, and all five candidate cards passed structural and exact-citation
-gates. The final pipeline combines a distinct GPT-5.4 Mini semantic verifier,
-18 source-derived manual sentinel labels, deterministic human overrides, and
-bounded verifier-feedback regeneration. All five cards passed after manual
-item-level review.
+**Accepted as the calibration basis for a full-corpus extractor, but not yet
+implemented for all 85 entries or integrated into runtime tools.** GPT-5 Mini
+produced substantially better method depth than GPT-5 Nano, and all five
+candidate cards passed structural and exact-citation gates. The final pilot
+pipeline combines a distinct GPT-5.4 Mini semantic verifier, 18 source-derived
+manual sentinel labels, deterministic human overrides, and bounded
+verifier-feedback regeneration. All five cards passed after manual item-level
+review.
 
 The gate worked rather than merely becoming permissive. Community Land Trust
 required one replacement card after its original one-sentence description was
@@ -17,8 +18,9 @@ unsupported actor premise in a transfer question, while the second initially
 retained two inferred enabling conditions that the manual labels removed. The
 pipeline preserves every candidate, verifier decision, override, regenerated
 card, and subsequent verification in ignored build artifacts. Processing all 85
-entries is now unblocked; adding the resulting cards to runtime tools still
-requires separate practitioner acceptance.
+entries is now the next implementation step, not a command this pilot script
+already exposes. Adding resulting cards to runtime tools still requires
+separate practitioner acceptance.
 
 ## Scope and boundaries
 
@@ -100,7 +102,7 @@ harness instructs the model not to manufacture them by juxtaposing facts.
 | Semantic field fidelity | Pass with adjudication | The distinct verifier matched 15 of 18 applicable sentinel decisions; three disagreements were resolved by recorded human labels rather than silent rewriting. |
 | Regeneration completeness | Pass | Community Land Trust passed after one replacement; Remunicipalization passed after two, with cumulative feedback preventing rejected ideas from reappearing. |
 | Manual method-card review | Pass | All five final cards retain concrete mechanisms, actors, conditions or constraints, observable signals, at least two transfer questions, and at least three search concepts. |
-| Full-corpus extraction readiness | **Pass** | The bounded pipeline may now process 85 entries. Runtime integration and practitioner scenario acceptance remain separate gates. |
+| Pilot prerequisite for full-corpus work | **Pass** | The five-entry calibration gate passed. A full-corpus command, corpus-level review, runtime integration, and practitioner scenario acceptance remain to be implemented. |
 
 ## Semantic-verifier experiment
 
@@ -192,8 +194,9 @@ evidence. No cost estimate is asserted here.
 
 ## Next gate
 
-Run the same extraction, verification, adjudication, and bounded regeneration
-pipeline over all 85 entries. Review the resulting corpus for new semantic
+Implement a separate full-corpus mode that applies extraction, verification,
+and bounded regeneration across all 85 entries without pretending the 18
+pilot labels cover unseen cards. Review the resulting corpus for new semantic
 failure classes before adding method cards to tracked runtime data. Then rerun
 the plain-language housing, gig-worker, and renewable-energy practitioner
 scenarios through the actual MCP tools; pilot-card quality does not prove
