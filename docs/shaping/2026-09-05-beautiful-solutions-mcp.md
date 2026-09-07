@@ -19,7 +19,7 @@ turning situated stories into universal prescriptions.
 | R4 | Keep results deterministic and inspectable; the conversational model does synthesis, while the server retrieves and assembles source evidence. |
 | R5 | Comply with CC BY-NC-SA 4.0: attribution, license link, change notice, ShareAlike, NonCommercial restriction, and no implied endorsement. |
 | R6 | Exclude images and avoid unsupported claims, outcome guarantees, or decontextualized recommendations. |
-| R7 | Work locally over stdio with no database, API key, or runtime network dependency. |
+| R7 | Work over local stdio and public Streamable HTTP with no database, API key, or runtime outbound network dependency. |
 
 ## Selected shape: static source graph
 
@@ -51,7 +51,7 @@ canonical source URL.
 | P3. Reference tools | Search, list, retrieve, and follow source-authored relationships. | R1, R2, R3 |
 | P4. Praxis tools | Map a challenge across source types, compare selected entries, and generate a discussion scaffold. | R2, R3, R4, R6 |
 | P5. Attribution envelope | Every result includes concise source, license, and adaptation metadata. | R5 |
-| P6. Stdio package | TypeScript MCP server, focused tests, install and use documentation. | R4, R7 |
+| P6. Dual transport package | TypeScript MCP server with local stdio and public Streamable HTTP, focused tests, install and use documentation. | R4, R7 |
 
 ## Tool catalog
 
@@ -79,6 +79,5 @@ canonical source URL.
 ## Out of scope for V1
 
 - Images, translated editions, live website search, user accounts, favorites,
-  analytics, vector embeddings, LLM-generated recommendations, and hosted
-  deployment.
+  analytics, vector embeddings, and LLM-generated recommendations.
 - Legal advice about whether a specific use is NonCommercial.
