@@ -146,6 +146,17 @@ describe('praxis tools', () => {
     assert.equal(response.result.lenses.story[0]?.id, 'bsol-energiewende');
   });
 
+  it('does not count a synthetic synonym as an independent challenge match', () => {
+    const response = mapChallenge('renewable bananas elephants zebras');
+    const entries = Object.values(response.result.lenses).flat();
+    const synonymSearch = searchToolbox('renewable').result.entries;
+
+    assert.deepEqual(entries, []);
+    assert.ok(synonymSearch.some(entry =>
+      entry.id === 'bsol-design-global-manufacture-local'
+      && entry.matchedTokens.includes('solar')));
+  });
+
   it('compares source fields and builds a clearly labelled generated guide', () => {
     const compared = compareEntries([
       'bsol-community-land-trust',
