@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { createHttpApp, createServer } from './index.js';
+import { createHttpApp, createServer, shouldUseHttpTransport } from './index.js';
 
 describe('MCP catalog', () => {
   it('lists and calls all eight tools over the protocol', async () => {
@@ -45,6 +45,13 @@ describe('MCP catalog', () => {
 });
 
 describe('HTTP transport', () => {
+  it('selects HTTP explicitly and in Railway deployments', () => {
+    assert.equal(shouldUseHttpTransport({}), false);
+    assert.equal(shouldUseHttpTransport({ MCP_TRANSPORT: 'http' }), true);
+    assert.equal(shouldUseHttpTransport({ RAILWAY_ENVIRONMENT_ID: 'production-id' }), true);
+    assert.equal(shouldUseHttpTransport({ RAILWAY_ENVIRONMENT_NAME: 'production' }), false);
+  });
+
   it('serves health, enforces sessions, and supports an MCP client', async () => {
     const app = createHttpApp();
     const httpServer = app.listen(0, '127.0.0.1');

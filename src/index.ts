@@ -135,6 +135,10 @@ export interface HttpAppOptions {
 const DEFAULT_MAX_SESSIONS = 100;
 const DEFAULT_SESSION_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 
+export function shouldUseHttpTransport(environment: NodeJS.ProcessEnv = process.env) {
+  return environment.MCP_TRANSPORT === 'http' || Boolean(environment.RAILWAY_ENVIRONMENT_ID);
+}
+
 function sendProtocolError(res: Response, status: number, code: number, message: string) {
   res.status(status).json({
     jsonrpc: '2.0',
@@ -300,7 +304,7 @@ function startHttpServer() {
 }
 
 export async function main() {
-  if (process.env.MCP_TRANSPORT === 'http' || process.env.RAILWAY_ENVIRONMENT) {
+  if (shouldUseHttpTransport()) {
     startHttpServer();
   } else {
     await startStdioServer();
