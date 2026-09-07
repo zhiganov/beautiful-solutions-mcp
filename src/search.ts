@@ -1,4 +1,4 @@
-import type { EntryType, ToolboxEntry } from './types.js';
+import type { EntryType, RuntimeToolboxEntry } from './types.js';
 
 const STOP_WORDS = new Set([
   'a', 'all', 'also', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by', 'can',
@@ -8,6 +8,11 @@ const STOP_WORDS = new Set([
   'under', 'us', 'want', 'wants', 'way', 'we', 'what', 'when', 'where', 'which',
   'who', 'will', 'with', 'would', 'you', 'your',
 ]);
+
+const QUERY_TOKEN_EXPANSIONS: Record<string, string[]> = {
+  solar: ['renewable'],
+  renewable: ['solar'],
+};
 
 function normalize(value: string): string {
   return value
@@ -48,13 +53,19 @@ export interface SearchFilters {
 }
 
 export interface SearchResult {
-  entry: ToolboxEntry;
+  entry: RuntimeToolboxEntry;
   score: number;
   matchedFields: string[];
+  matchedTokens: string[];
 }
 
-export function searchEntries(entries: ToolboxEntry[], query: string, filters: SearchFilters = {}): SearchResult[] {
-  const queryTokens = tokenize(query);
+export function searchEntries(entries: RuntimeToolboxEntry[], query: string, filters: SearchFilters = {}): SearchResult[] {
+  const literalQueryTokens = tokenize(query);
+  const queryTokens = [...new Set(literalQueryTokens.flatMap(token => [
+    token,
+    ...(QUERY_TOKEN_EXPANSIONS[token] ?? []),
+  ]))];
+  const expandedOnlyTokens = new Set(queryTokens.filter(token => !literalQueryTokens.includes(token)));
   const normalizedQuery = normalize(query);
   if (queryTokens.length === 0) return [];
 
@@ -68,6 +79,19 @@ export function searchEntries(entries: ToolboxEntry[], query: string, filters: S
     const directFields = {
       title: tokenSet(entry.title),
       summary: tokenSet(entry.summary),
+      method_summary: tokenSet(entry.methodCard.oneSentence),
+      method_concepts: tokenSet(entry.methodCard.searchConcepts.join(' ')),
+      method_details: tokenSet([
+        ...entry.methodCard.purposes,
+        ...entry.methodCard.problemContext,
+        ...entry.methodCard.mechanisms,
+        ...entry.methodCard.actorsAndRoles.flatMap(item => [item.actor, item.role]),
+        ...entry.methodCard.enablingConditions,
+        ...entry.methodCard.constraints,
+        ...entry.methodCard.tensions,
+        ...entry.methodCard.observableSignals,
+        ...entry.methodCard.transferQuestions.flatMap(item => [item.question, item.rationale]),
+      ].join(' ')),
       people: tokenSet([...entry.authors, ...entry.guides].join(' ')),
     };
     const contextualFields = {
@@ -77,10 +101,13 @@ export function searchEntries(entries: ToolboxEntry[], query: string, filters: S
     const directWeights: Record<keyof typeof directFields, number> = {
       title: 8,
       summary: 4,
+      method_summary: 6,
+      method_concepts: 7,
+      method_details: 3,
       people: 2,
     };
     const contextualWeights: Record<keyof typeof contextualFields, number> = {
-      sector: 5,
+      sector: 70,
       related: 2,
     };
     let score = 0;
@@ -91,6 +118,7 @@ export function searchEntries(entries: ToolboxEntry[], query: string, filters: S
       const matches = queryTokens.filter(token => tokens.has(token));
       if (matches.length > 0) {
         score += matches.length * directWeights[fieldName];
+        score += matches.filter(token => expandedOnlyTokens.has(token)).length * 3;
         matchedFields.push(fieldName);
         matches.forEach(token => directMatchedTokens.add(token));
       }
@@ -102,6 +130,7 @@ export function searchEntries(entries: ToolboxEntry[], query: string, filters: S
     else if (normalizedQuery.length > 4 && normalizedSummary.includes(normalizedQuery)) score += 6;
 
     if (directMatchedTokens.size < (filters.minDirectMatches ?? 1)) return [];
+    score += directMatchedTokens.size ** 2 * 2;
 
     for (const [fieldName, tokens] of Object.entries(contextualFields) as [keyof typeof contextualFields, Set<string>][]) {
       const matches = queryTokens.filter(token => tokens.has(token));
@@ -116,7 +145,12 @@ export function searchEntries(entries: ToolboxEntry[], query: string, filters: S
       matchedFields.push('source_relationship');
     }
 
-    return [{ entry, score, matchedFields: [...new Set(matchedFields)] }];
+    return [{
+      entry,
+      score,
+      matchedFields: [...new Set(matchedFields)],
+      matchedTokens: [...directMatchedTokens].sort(),
+    }];
   });
 
   return results

@@ -21,6 +21,21 @@ export interface RelatedEntry {
   sourceUrl: string;
 }
 
+export interface MethodCard {
+  entryId: string;
+  oneSentence: string;
+  purposes: string[];
+  problemContext: string[];
+  mechanisms: string[];
+  actorsAndRoles: Array<{ actor: string; role: string }>;
+  enablingConditions: string[];
+  constraints: string[];
+  tensions: string[];
+  observableSignals: string[];
+  transferQuestions: Array<{ question: string; rationale: string }>;
+  searchConcepts: string[];
+}
+
 export interface ToolboxEntry {
   id: string;
   type: EntryType;
@@ -40,11 +55,34 @@ export interface ToolboxEntry {
   sourceLastModified?: number;
 }
 
+export interface RuntimeToolboxEntry extends ToolboxEntry {
+  methodCard: MethodCard;
+}
+
 export interface ToolboxData {
   schemaVersion: number;
   work: string;
   language: string;
   entries: ToolboxEntry[];
+}
+
+export interface MethodCardData {
+  schemaVersion: number;
+  work: string;
+  sourceSha256: string;
+  acceptanceSha256: string;
+  license: { id: string; url: string };
+  changes: string[];
+  entries: MethodCard[];
+}
+
+export interface MethodCardManifest {
+  schemaVersion: number;
+  acceptedOn: string;
+  entries: number;
+  sourceSha256: string;
+  acceptanceSha256: string;
+  methodCardsSha256: string;
 }
 
 export interface SourceManifest {

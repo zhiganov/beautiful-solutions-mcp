@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { SOURCE_MANIFEST, TOOLBOX } from './data.js';
+import { METHOD_CARDS, METHOD_CARD_MANIFEST, SOURCE_MANIFEST, TOOLBOX } from './data.js';
 import {
   buildDiscussionGuide,
   compareEntries,
@@ -54,7 +54,22 @@ describe('source snapshot', () => {
   it('matches the structural integrity hash in the manifest', () => {
     const bytes = readFileSync(new URL('./data/toolbox.json', import.meta.url));
     assert.equal(createHash('sha256').update(bytes).digest('hex'), SOURCE_MANIFEST.toolboxSha256);
-    assert.equal(getSourceInfo().result.integrity.matches, true);
+    assert.equal(getSourceInfo().result.integrity.toolbox.matches, true);
+    assert.equal(getSourceInfo().result.integrity.methodCards.matches, true);
+  });
+
+  it('ships one reviewed method card per entry without full write-ups or verification quotations', () => {
+    assert.equal(METHOD_CARDS.entries.length, 85);
+    assert.equal(METHOD_CARD_MANIFEST.entries, 85);
+    assert.equal(METHOD_CARD_MANIFEST.sourceSha256, METHOD_CARDS.sourceSha256);
+    assert.equal(METHOD_CARD_MANIFEST.acceptanceSha256, METHOD_CARDS.acceptanceSha256);
+    assert.deepEqual(
+      METHOD_CARDS.entries.map(card => card.entryId),
+      TOOLBOX.entries.map(entry => entry.id),
+    );
+    assert.deepEqual(collectDataProblems(METHOD_CARDS), []);
+    assert.equal(JSON.stringify(METHOD_CARDS).includes('evidenceQuotes'), false);
+    assert.ok(METHOD_CARDS.entries.every(card => card.oneSentence && card.searchConcepts.length > 0));
   });
 });
 
@@ -62,7 +77,7 @@ describe('reference tools', () => {
   it('finds community land trusts for a collective housing challenge', () => {
     const response = searchToolbox('collective ownership affordable housing');
     assert.ok(response.result.entries.slice(0, 5).some(entry => entry.id === 'bsol-community-land-trust'));
-    assert.equal(response.result.entries[0]?.id, 'bsol-limited-equity-housing-cooperatives');
+    assert.equal(response.result.entries[0]?.id, 'bsol-community-land-trust');
     assert.equal(response.attribution.license, 'CC-BY-NC-SA-4.0');
   });
 
@@ -80,9 +95,21 @@ describe('reference tools', () => {
     assert.match(response.result.sourceUrl, /beautifultrouble\.org/);
     assert.match(response.result.readingBoundary, /not the complete entry text/i);
     assert.equal('body' in response.result, false);
+    assert.match(response.result.methodCardNotice, /not a source quotation/i);
+    assert.ok(response.result.methodCard.mechanisms.length > 0);
 
     const related = getRelatedEntries('bsol-community-land-trust', 'principle');
     assert.ok(related.result.related.some(entry => entry.id === 'bsol-democratize-ownership'));
+  });
+
+  it('uses reviewed method vocabulary for plain-language discovery', () => {
+    const gigWork = searchToolbox('worker-owned app for gig workers');
+    assert.ok(gigWork.result.entries.slice(0, 3).some(entry =>
+      entry.id === 'bsol-artist-and-freelancer-co-ops-in-europe'));
+
+    const communitySolar = searchToolbox('community-owned solar power');
+    assert.ok(communitySolar.result.entries.slice(0, 5).some(entry =>
+      entry.id === 'bsol-energiewende'));
   });
 });
 
@@ -111,6 +138,14 @@ describe('praxis tools', () => {
     assert.ok(response.result.lenses.principle.length > 0);
   });
 
+  it('foregrounds reviewed energy models for a community-controlled renewable-energy challenge', () => {
+    const response = mapChallenge(
+      'Residents want community-controlled renewable energy, local ownership, and affordable power.',
+    );
+    assert.equal(response.result.lenses.solution[0]?.id, 'bsol-remunicipalization');
+    assert.equal(response.result.lenses.story[0]?.id, 'bsol-energiewende');
+  });
+
   it('compares source fields and builds a clearly labelled generated guide', () => {
     const compared = compareEntries([
       'bsol-community-land-trust',
@@ -118,6 +153,7 @@ describe('praxis tools', () => {
     ]);
     assert.equal(compared.result.entries.length, 2);
     assert.match(compared.result.note, /does not rank/i);
+    assert.ok(compared.result.entries.every(entry => entry.methodCard.mechanisms.length > 0));
 
     const guide = buildDiscussionGuide(
       ['bsol-community-land-trust'],
@@ -125,6 +161,8 @@ describe('praxis tools', () => {
     );
     assert.match(guide.result.generatedNotice, /not quotations/i);
     assert.equal(guide.result.readings[0]?.id, 'bsol-community-land-trust');
+    assert.ok(guide.result.readings[0]?.methodCard.mechanisms.length > 0);
+    assert.ok(guide.result.adaptedTransferQuestions.length > 0);
     assert.equal(
       guide.result.flow[0]?.prompts[0],
       'What do current arrangements fail to provide in this context: neighborhood housing coalition?',

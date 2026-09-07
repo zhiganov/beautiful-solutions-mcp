@@ -1,0 +1,439 @@
+{
+  "schemaVersion": 1,
+  "kind": "Beautiful Solutions full-corpus manual semantic acceptance",
+  "sourceSha256": "b7e730dc309483190b68c1980ba994966c0127520d679c7e06ca8b81f72b9163",
+  "candidatePromptVersion": "method-card-v6-type-aware-full-corpus",
+  "candidateModel": "gpt-5-mini",
+  "verificationPromptVersion": "method-card-verifier-v6-causality-role-and-inference-policy",
+  "verificationModel": "gpt-5.4-mini",
+  "manualOverridesSha256": "17bb7feff7f4f1891cf928c38c6075d272aedbff4fc5f8ca6e0344e55543aff6",
+  "acceptedOn": "2026-09-07",
+  "reviewScope": "Every final method card and every regenerated replacement was manually reviewed against its preserved source-sentence evidence. Acceptance applies only to the exact final-card hashes listed here.",
+  "entries": [
+    {
+      "entryId": "bsol-abolition",
+      "finalCardSha256": "c7c2d92d285709cf6f3200433e0ba8a48adbc47cb91e225928c3008ee6df5e75",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-adaptation",
+      "finalCardSha256": "266a085c84995d49d0bc72a52081f72506e4096dc58dc455e5eb1da1db455b52",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-artist-and-freelancer-co-ops-in-europe",
+      "finalCardSha256": "5efb24b71990f99426fe3094a4f78902d69110767fdd396021523e4a0deb0370",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-association-of-recyclers-of-bogota",
+      "finalCardSha256": "622cf5527f42aeccd68e4137b19b142190a549e3943c62363bf1a32d438e2e88",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-autonomous-self-defense-in-cheran",
+      "finalCardSha256": "c51f162e93678c2ff96da8018596ec8d7c12476c86664272ddd9bf2a20d9f1ce",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-baraza",
+      "finalCardSha256": "1ec29d0024dbc217c5f187c64ce33752d4aff34104a4e64bf27ca5362eaf0362",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-be-transparent",
+      "finalCardSha256": "cc906d2892a89faa2bd2c6f2bdf100441324027053b0907503d9d7244ce19528",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-berea-college",
+      "finalCardSha256": "2b119d47400114b4afeb516c63cf46d0467c6ab03cd192982d63816212a2583d",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-build-for-access",
+      "finalCardSha256": "a30d11d5aecfd8bc9462172d2e66296385f4968c62a678ec57f633835ad537d2",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-carolina-textile-district-and-covid-19",
+      "finalCardSha256": "86718a897dfdc4a7954ab9a0a5101d54324a1da9844fbc39e7138c13a3a621b7",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-celebration-of-life",
+      "finalCardSha256": "0dcc0ad9660c35ed9f96e9d6e9008e1b5a21ccc9d7fe697a197c03ff20ef18c7",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-chitsvachirimurutsoka-cooperative-society",
+      "finalCardSha256": "c64297d48554a04844e938d56d5b51c457836e1d34d639b4b13caa2cac3d71a0",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-choose-collective-courage",
+      "finalCardSha256": "0ef2c83b8ab76aa2d0c3494b374727655819001b97e4b81de948cd0a2cde7668",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-community-broadband-networks",
+      "finalCardSha256": "a0975d22f2df06ad11dc39a7a89bd3088e0f9de413aa7f1ab631fe8aa940ea51",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-community-land-trust",
+      "finalCardSha256": "7322f31d67a05f705c3e615982452e7b2a13453ff698d350be7c51e0a3f6cd53",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-community-media-association-of-honduras",
+      "finalCardSha256": "f08293e1eaacce0066972095fdb16868b59ee032f2c5aa65208e531f6b81d733",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-community-safety",
+      "finalCardSha256": "f20c341538ef8738c21a3e41bbca2c9a4c14c7793cee105df0fd9ae4e0a513a4",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-community-owned-sports-teams",
+      "finalCardSha256": "85c3ee0f7542e3a9ddcca597e0b93122f34ce0e85a5d867a3b2427474c62f0e0",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-comprehensive-sexuality-education-in-the-philippines",
+      "finalCardSha256": "f0b426d3cd2fdbb95a90fcc1afc17e5fb4838592925595d0bfb5925ba0035eef",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-conflict-kitchen",
+      "finalCardSha256": "ad5ac5d9e700d214ee5ddead6dd8fd1aa18f0781272c2dc341c891861e0acd47",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-cooperative-education",
+      "finalCardSha256": "4c3032a9a376eae4268c08d7a2c08ca2052491460bf88fccc74ef4f3efa7ed99",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-cultural-sovereignty",
+      "finalCardSha256": "05e2b88a7af5189029c7012c97eb5b8302b08963aa775e6aeb6d2e29f415c009",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-debt-abolition",
+      "finalCardSha256": "ac4ec7edd3e92ab3513c6b058bce9737adca3305d55273e90f536debbdf989a9",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-democratic-participation",
+      "finalCardSha256": "36225f5b52c18d3d3f972de059eb6cf87bb5ef405948161a582f928103d41a2d",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-democratize-ownership",
+      "finalCardSha256": "7af1b13d9f4ecfbdfa004910c1aaf5948081f82f4036311620db44235556d964",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-design-global-manufacture-local",
+      "finalCardSha256": "4d7415bf0c7b71182e70ec81d660124190f7a756c90a4d116bb540fb28a9bbdd",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-develop-community-leaders",
+      "finalCardSha256": "2c49c40920eaaaaa5817d74b026b6259642706e6eb061de75077d800568db78b",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-energiewende",
+      "finalCardSha256": "501b17dad678196b063669ad6c11181e478f7d47ba43530734552609100feb5d",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-equipo-maiz",
+      "finalCardSha256": "333dad0c68ab5559151bdaf5e449d3a4b1a1b456d61359ddc8e192057112bdd7",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-equity-and-justice",
+      "finalCardSha256": "8348b186e4782d60d2c8d08c683c1d65e6ba69b3f83388b0613efb307abe9f88",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-food-sovereignty",
+      "finalCardSha256": "8b276decd266ede4a8febfbf20e638c04e4d2be1013b5cdfe4878dba32f4c0d9",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-free-libre-and-open-source-software",
+      "finalCardSha256": "93d54267178becc019e271846fb92644c923e232b8840efbffae2638305e33ce",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-greenwave-regenerative-ocean-farming",
+      "finalCardSha256": "ff6545f32670d698254a4fcbae7f1b4d78e043021b73fdbabaf2f5ac29f503ed",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-guifi-net",
+      "finalCardSha256": "5b832f49da09f045663f82bfa4fe6bbf69b8f2503e5c25e026f89d89de5b1ec4",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-health-mutuals-in-mali",
+      "finalCardSha256": "1a61a4c442305f7d81245289188f6166ddc2e770ea6de821eef112ad88e36cae",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-how-do-we-acknowledge-and-repair-generational-harm-and-move-toward-healing-",
+      "finalCardSha256": "b7f8b908d8326a4309e03ce757cb0acc219d035f5ca825af481d5595c1cf84f0",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-how-do-we-care-for-our-people-as-we-take-action-on-the-side-of-life-and-adapt-to-a-changing-world-",
+      "finalCardSha256": "4fca238eb250b2feb924bc14e23649a189758aafe6a78fc81fe16d66ffea065d",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-how-do-we-create-and-adopt-new-technologies-without-deepening-inequalities-",
+      "finalCardSha256": "b8dca709796a6183ff0d7739d13a1ac09d94594b909f03945bb700fca0aac593",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-how-do-we-move-beyond-incremental-reforms-to-real-changes-that-transform-the-system-",
+      "finalCardSha256": "6deed98a4957e260f89587f61903ceff17793a4c1d421b895c6e336dadee9ea0",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-how-do-we-relate-to-government-and-state-power-in-growing-solidarity-economies-",
+      "finalCardSha256": "e3d328be60cd074fa3ac11fe37ebb274c8b1c9c076ad410fda1f38f1376203eb",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-how-do-we-relate-to-the-borders-drawn-by-colonialism-and-empire-and-to-peoples-need-to-move-across-them-",
+      "finalCardSha256": "8a57b05223bd9b7a100fd30e833c4aacfc2ee34163e410c9a185647096940916",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-how-do-we-scale-up-solidarity-economy-ideas-and-solutions-",
+      "finalCardSha256": "8e60cd8faf04ee259652477211dca392a352663c65089d31ea9f24bebd832fab",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-how-do-we-stop-depending-on-violent-systems-to-make-us-safe-",
+      "finalCardSha256": "5b3c14ed8b89c9d1b5bbff419167c75773fd2b9165d400ee8ecaffe413792e60",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-incarcerated-worker-co-ops-in-puerto-rico",
+      "finalCardSha256": "a23b5ac44c0ad604e4d5927c538975866c5df252f7b75498aa078c541ca492f1",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-informal-settlement-networks",
+      "finalCardSha256": "ee105018e959674ead6a24a509dea992027cee175ef33eacbf20e0484caa9b6e",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-islamic-finance",
+      "finalCardSha256": "960c4a539acc5f9208558c3521675eabe0a1d199c7256f3f117a672ef8e2ebfa",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-la-coperacha",
+      "finalCardSha256": "99b5ab27676b99189e94472fb8c3914c94b1a75418a4206be195d9f8835b998f",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-land-justice",
+      "finalCardSha256": "3f3996c89b8907dd6a7c034de9ffa0d49fc90c464354fcaf97875730f72f9048",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-landless-workers-movement",
+      "finalCardSha256": "463530215af5a31a112afe4ec87c7b70c80de99db6e41b1dd2c4532b83a64069",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-legislative-theater",
+      "finalCardSha256": "cac2f6a9a0d60b46ed0c50f872f2f9551c908e6d7c3b790da99e9a4355a7267a",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-limited-equity-housing-cooperatives",
+      "finalCardSha256": "087f1b222e5e84f191a8adf88cc40849bafdb6622120883caf1eb733bfa1a632",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-media-cooperatives",
+      "finalCardSha256": "4715298a0a4254ebc9dfbe972765469bf164664f086b2fcd3681ebeba20af7a8",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-mutual-aid-finance-in-montreal",
+      "finalCardSha256": "2827f66a79db844480029f72e23a825a7e83586273c195b3c549635f0d78552c",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-muungano-slum-dwellers",
+      "finalCardSha256": "ff9ce4d1123997b900622a029df65e838ced2318ae3df5fe74e0cb20ec6122cc",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-ndn-fund",
+      "finalCardSha256": "5dfe16e7112a188b08480e8c7c05c6c72ed5a4ec842eafd9f463f5f02e5739b6",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-participatory-budgeting",
+      "finalCardSha256": "d7b490c07e92919104581a87c873935e05947b47f82dc0dbd17adc56a55054c9",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-participatory-guarantee-systems",
+      "finalCardSha256": "485e93541bfd7eee297a88918ffc8a5cee2ad131bebcbf4b427f2bc48a3f5484",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-policies-for-cooperatives",
+      "finalCardSha256": "8c03c112be88fc69f7b71dfc74357943e064b15d194e47f35326e69e20afe3ca",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-popular-education-and-folk-schools",
+      "finalCardSha256": "e89280f0b2ff49d371116e395b36b4d52663cce1831202759b03315736507104",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-practice-freedom",
+      "finalCardSha256": "390f8846c964288b9678c7eb95d6b75b7a13397b38dc8508be2dd947120cae5c",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-public-pharmaceuticals",
+      "finalCardSha256": "e0edf594c2589d7c7d8633eeb6a11fe6c8f7043aa7f8c0cb6cdbf8df8013bce1",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-put-care-first",
+      "finalCardSha256": "541efa22af41f636cfa092eb5baa63ad67c0ff7b27c10f9670607c884c42df36",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-radical-grandma-collective",
+      "finalCardSha256": "6ee5f2cd290dacd2aa0f69caa75a0883af76ef7c7761f150fefcad6fc9673be2",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-recuperated-factories",
+      "finalCardSha256": "67d4411b28adf7a510dd204d17f2091688b028211a272cab8755fcc320e2bded",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-reggio-emilia-preschools",
+      "finalCardSha256": "0049633ec06cf4c81bdd4aec031d5e8a687771944de8dcd02943467b2e2c6c81",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-remunicipalization",
+      "finalCardSha256": "71a6a9acd86c22faa0cf2f1e20d2166fd3d1ef8bbb81d5cf584742dcf304ea59",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-restorative-practices-aotearoa",
+      "finalCardSha256": "c103cf4b9230fb066e99dd843a42058d0779ee9f78b47d9c78eb2c4423834edd",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-right-relationship",
+      "finalCardSha256": "e6c396959177854c7ac85f0b6aa3814ae8d3b7e3408a6e13d96c787536ccd180",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-rights-of-nature-in-ecuador",
+      "finalCardSha256": "47076244bd52e017f1c2d5429210f701dbd3f6dbfc439bda9262b216e1b4999b",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-seikatsu-club-consumers-co-operative-union",
+      "finalCardSha256": "5e95401f1fcee0aaf89f8a5b7dc6c01a65eb51663211582c9016294e7b22c817",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-self-employed-womens-association",
+      "finalCardSha256": "5b610a6bb36d77174e80339e36eb3bed7b1e65eae60ea08876f0b41fde29b3ec",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-share-responsibility",
+      "finalCardSha256": "02149b70aa54de5fd2ab3a270c0fbf610382ba339776cff287bbc144bf2a6750",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-shared-power",
+      "finalCardSha256": "9cb03c5c657ba748ab91d154f0a630dfc7743eb03d579d44f5c3003f9ef8c3c1",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-social-cooperatives",
+      "finalCardSha256": "c064ec9eb0813cbb6800a33f4d76c9dc4228fa240f7a479f9c628406f04ff752",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-social-solidarity-clinics-in-greece",
+      "finalCardSha256": "73de0a2608a074630242358122dc33d119692d9087e9e8de7fd840be885de5bf",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-southern-journeys-collective",
+      "finalCardSha256": "eb57f71730c58a3dfa0573375b706d82ab250647c467f9807e3194768df0de80",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-sustainable-resources-management-in-nepal",
+      "finalCardSha256": "7a4cfacd8f6366a54e68127559613c2eff26394d3d8b814faf7148f679fccafb",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-take-the-right-risks",
+      "finalCardSha256": "bb3319af79778e66d17c39264d4a56b83ea9b81916cec5fe6d30d34bce6d68c3",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-taking-back-the-water-system-in-ramos-arizpe",
+      "finalCardSha256": "f38efb2835fd0e37dc71fec735dbf535c97518aefffb2d9b3ab6c20f653de0d5",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-tandas",
+      "finalCardSha256": "72503b1850a48a24cd1b25ebf8290ab0042b0aa9b0181b34c8ca7ba809dcf560",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-the-co-operative-university-of-kenya",
+      "finalCardSha256": "bf39438d25ec30712a3e15717457686c79843a1dd93ef813ce9c07f5948e7f32",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-the-commons",
+      "finalCardSha256": "3aff62a6de944a5df63a8108d1afe5f1273d2e39aa8de442a47cb637e5ddbe99",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-travel-many-paths",
+      "finalCardSha256": "40598fa8602d6f84bb05a47bfca286e9e07bd51d013cd5b402506d668a053d81",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-vtaiwan",
+      "finalCardSha256": "b1816e820b81bc26891a31856fd3c473d5cfe13e3f4211a40ed7c709c8647bbd",
+      "status": "accepted"
+    },
+    {
+      "entryId": "bsol-zero-waste",
+      "finalCardSha256": "c61208ad301cd13868ce0f75cbd7cfe6c2510fcaf051396a7fbe6106e1ab4184",
+      "status": "accepted"
+    }
+  ]
+}

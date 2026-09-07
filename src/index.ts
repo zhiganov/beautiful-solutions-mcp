@@ -40,7 +40,7 @@ export function createServer() {
 
   server.registerTool('search_toolbox', {
     title: 'Search Beautiful Solutions',
-    description: 'Search the Beautiful Solutions values, principles, questions, solutions, and stories. Results are deterministic source matches, not recommendations.',
+    description: 'Search the Beautiful Solutions values, principles, questions, solutions, stories, and reviewed method cards. Results are deterministic source matches, not recommendations.',
     inputSchema: {
       query: z.string().min(2).describe('Words or phrase describing a challenge, model, place, or topic'),
       type: z.enum(ENTRY_TYPES).optional().describe('Optional source type filter'),
@@ -63,7 +63,7 @@ export function createServer() {
 
   server.registerTool('get_entry', {
     title: 'Read a Beautiful Solutions Entry',
-    description: 'Get one source-authored summary with authors, references, source relationships, canonical URL, and CC attribution. Complete entry text remains at the canonical source.',
+    description: 'Get one source-authored summary plus its adapted, manually reviewed method card, authors, references, source relationships, canonical URL, and CC attribution. Complete entry text remains at the canonical source.',
     inputSchema: {
       id: z.string().describe('Entry ID, such as bsol-community-land-trust'),
     },
@@ -91,7 +91,7 @@ export function createServer() {
 
   server.registerTool('compare_entries', {
     title: 'Compare Source Entries',
-    description: 'Place two to six entries side by side using source fields. The tool does not rank models or declare a best choice.',
+    description: 'Place two to six entries and their reviewed method dimensions side by side. The tool does not rank models or declare a best choice.',
     inputSchema: {
       ids: z.array(z.string()).min(2).max(6).describe('Two to six entry IDs'),
     },
@@ -99,7 +99,7 @@ export function createServer() {
 
   server.registerTool('build_discussion_guide', {
     title: 'Build a Source-Grounded Discussion Guide',
-    description: 'Assemble an attributed class, book-club, or community discussion scaffold from one to five selected entries and their source-linked questions and values.',
+    description: 'Assemble an attributed discussion scaffold from selected entries, reviewed method cards, adapted transfer questions, and source-linked questions and values.',
     inputSchema: {
       ids: z.array(z.string()).min(1).max(5).describe('One to five entry IDs to anchor the discussion'),
       context: z.string().optional().describe('Short description of the group or situation'),
