@@ -9,6 +9,13 @@ import { randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import type { Response } from 'express';
 import { z } from 'zod';
+import {
+  captureAnalytics,
+  classifyClient,
+  createPostHogAnalytics,
+  withToolCallAnalytics,
+  type Analytics,
+} from './analytics.js';
 import { ENTRY_TYPES } from './types.js';
 import {
   buildDiscussionGuide,
@@ -40,8 +47,26 @@ function safe(handler: () => unknown) {
   }
 }
 
-export function createServer() {
+export interface CreateServerOptions {
+  analytics?: Analytics | false;
+}
+
+export function createServer(options: CreateServerOptions = {}) {
   const server = new McpServer({ name: 'beautiful-solutions', version: '0.1.1' });
+  const analytics = options.analytics === false
+    ? undefined
+    : options.analytics ?? createPostHogAnalytics();
+  const analyticsSessionId = randomUUID();
+  const analyticsContext = () => {
+    return {
+      sessionId: analyticsSessionId,
+      ...classifyClient(server.server.getClientVersion()),
+    };
+  };
+
+  server.server.oninitialized = () => {
+    captureAnalytics(analytics, { event: 'mcp_initialize', ...analyticsContext() });
+  };
 
   server.registerTool('search_toolbox', {
     title: 'Search Beautiful Solutions',
@@ -52,8 +77,11 @@ export function createServer() {
       sector: z.string().optional().describe('Optional exact sector filter; use list_entries to discover sectors'),
       max_results: z.number().int().min(1).max(20).optional().describe('Maximum results (default: 10)'),
     },
-  }, async ({ query, type, sector, max_results }) => safe(() =>
-    searchToolbox(query, { type, sector, limit: max_results ?? 10 })));
+  }, async ({ query, type, sector, max_results }) => withToolCallAnalytics(
+    analytics,
+    { event: 'mcp_tool_call', toolName: 'search_toolbox', ...analyticsContext() },
+    () => safe(() => searchToolbox(query, { type, sector, limit: max_results ?? 10 })),
+  ));
 
   server.registerTool('list_entries', {
     title: 'Browse Beautiful Solutions Entries',
@@ -63,8 +91,11 @@ export function createServer() {
       sector: z.string().optional().describe('Optional exact sector filter'),
       max_results: z.number().int().min(1).max(100).optional().describe('Maximum entries (default: all matching entries)'),
     },
-  }, async ({ type, sector, max_results }) => safe(() =>
-    listEntries({ type, sector, limit: max_results })));
+  }, async ({ type, sector, max_results }) => withToolCallAnalytics(
+    analytics,
+    { event: 'mcp_tool_call', toolName: 'list_entries', ...analyticsContext() },
+    () => safe(() => listEntries({ type, sector, limit: max_results })),
+  ));
 
   server.registerTool('get_entry', {
     title: 'Read a Beautiful Solutions Entry',
@@ -72,7 +103,11 @@ export function createServer() {
     inputSchema: {
       id: z.string().describe('Entry ID, such as bsol-community-land-trust'),
     },
-  }, async ({ id }) => safe(() => getEntry(id)));
+  }, async ({ id }) => withToolCallAnalytics(
+    analytics,
+    { event: 'mcp_tool_call', toolName: 'get_entry', ...analyticsContext() },
+    () => safe(() => getEntry(id)),
+  ));
 
   server.registerTool('get_related_entries', {
     title: 'Follow Source Relationships',
@@ -81,7 +116,11 @@ export function createServer() {
       id: z.string().describe('Source entry ID'),
       type: z.enum(ENTRY_TYPES).optional().describe('Optional related-entry type filter'),
     },
-  }, async ({ id, type }) => safe(() => getRelatedEntries(id, type)));
+  }, async ({ id, type }) => withToolCallAnalytics(
+    analytics,
+    { event: 'mcp_tool_call', toolName: 'get_related_entries', ...analyticsContext() },
+    () => safe(() => getRelatedEntries(id, type)),
+  ));
 
   server.registerTool('map_challenge', {
     title: 'Map a Challenge Across Toolbox Lenses',
@@ -91,8 +130,11 @@ export function createServer() {
       sector: z.string().optional().describe('Optional exact sector filter'),
       max_per_type: z.number().int().min(1).max(5).optional().describe('Maximum entries per toolbox type (default: 3)'),
     },
-  }, async ({ challenge, sector, max_per_type }) => safe(() =>
-    mapChallenge(challenge, { sector, maxPerType: max_per_type })));
+  }, async ({ challenge, sector, max_per_type }) => withToolCallAnalytics(
+    analytics,
+    { event: 'mcp_tool_call', toolName: 'map_challenge', ...analyticsContext() },
+    () => safe(() => mapChallenge(challenge, { sector, maxPerType: max_per_type })),
+  ));
 
   server.registerTool('compare_entries', {
     title: 'Compare Source Entries',
@@ -100,7 +142,11 @@ export function createServer() {
     inputSchema: {
       ids: z.array(z.string()).min(2).max(6).describe('Two to six entry IDs'),
     },
-  }, async ({ ids }) => safe(() => compareEntries(ids)));
+  }, async ({ ids }) => withToolCallAnalytics(
+    analytics,
+    { event: 'mcp_tool_call', toolName: 'compare_entries', ...analyticsContext() },
+    () => safe(() => compareEntries(ids)),
+  ));
 
   server.registerTool('build_discussion_guide', {
     title: 'Build a Source-Grounded Discussion Guide',
@@ -109,13 +155,21 @@ export function createServer() {
       ids: z.array(z.string()).min(1).max(5).describe('One to five entry IDs to anchor the discussion'),
       context: z.string().optional().describe('Short description of the group or situation'),
     },
-  }, async ({ ids, context }) => safe(() => buildDiscussionGuide(ids, context)));
+  }, async ({ ids, context }) => withToolCallAnalytics(
+    analytics,
+    { event: 'mcp_tool_call', toolName: 'build_discussion_guide', ...analyticsContext() },
+    () => safe(() => buildDiscussionGuide(ids, context)),
+  ));
 
   server.registerTool('get_source_info', {
     title: 'Inspect Source, License, and Integrity',
     description: 'Get source inventory, provenance, CC BY-NC-SA 4.0 conditions, adaptation notes, limitations, and snapshot integrity.',
     inputSchema: {},
-  }, async () => safe(getSourceInfo));
+  }, async () => withToolCallAnalytics(
+    analytics,
+    { event: 'mcp_tool_call', toolName: 'get_source_info', ...analyticsContext() },
+    () => safe(getSourceInfo),
+  ));
 
   return server;
 }
@@ -130,6 +184,7 @@ export interface HttpAppOptions {
   host?: string;
   maxSessions?: number;
   sessionIdleTimeoutMs?: number;
+  analytics?: Analytics | false;
 }
 
 const DEFAULT_MAX_SESSIONS = 100;
@@ -218,7 +273,7 @@ export function createHttpApp(options: HttpAppOptions = {}) {
       }
 
       initializingSessions += 1;
-      const server = createServer();
+      const server = createServer({ analytics: options.analytics });
       let session: HttpSession;
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: randomUUID,
