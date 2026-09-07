@@ -96,7 +96,7 @@ npm install
 npm run build
 ```
 
-Run the stdio server:
+Run the local stdio server:
 
 ```bash
 npm start
@@ -112,9 +112,15 @@ claude mcp add-json beautiful-solutions \
 
 No API key, database, or live web connection is required at runtime.
 
-Version 0.1 uses local stdio only. It is not currently offered as a hosted
-service. Anyone considering redistribution or hosting should review the
-NonCommercial and ShareAlike conditions described below.
+For Streamable HTTP, set `MCP_TRANSPORT=http` and optionally `PORT` (default
+`3000`), then run `npm start`. The public health route is `/health`; the MCP
+route is `/mcp`. Railway environments select HTTP automatically. HTTP sessions
+are stored only in process memory, capped at 100, and closed after 30 minutes
+without a request. The server makes no outbound network calls.
+
+The hosted endpoint will be documented after its Railway deployment is
+verified. Anyone redistributing or hosting the server must preserve the
+attribution and review the NonCommercial and ShareAlike conditions below.
 
 ## Development
 

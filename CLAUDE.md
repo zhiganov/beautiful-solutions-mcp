@@ -12,7 +12,7 @@ organizers, educators, facilitators, researchers, and community designers.
 npm run sync-source  # refresh the English source snapshot from the official API
 npm run build        # compile TypeScript and copy source data to dist
 npm test             # build and run focused tests
-npm start            # run the stdio MCP server
+npm start            # run stdio, or HTTP when MCP_TRANSPORT=http / on Railway
 npm run extract:pilot # run the calibrated five-entry build-time pilot
 npm run extract:full  # extract and verify all 85 entries for corpus review
 npm run audit:cards   # validate the full artifact and write the review worksheet
@@ -23,7 +23,7 @@ npm run integrate:cards # write manually accepted cards into tracked runtime dat
 
 ```text
 src/
-  index.ts            MCP server and eight tool registrations
+  index.ts            MCP server, eight tool registrations, and stdio/HTTP transports
   toolbox.ts          data loading, retrieval, maps, and guide scaffolds
   search.ts           deterministic weighted text search
   types.ts            source and response types
@@ -57,11 +57,15 @@ evaluation/
                         manual acceptance bound to all 85 final-card hashes
 ```
 
-No LLM, database, vector store, or network call is used at runtime. The
+No LLM, database, vector store, or outbound network call is used at runtime. The
 official Beautiful Trouble API is contacted only by the explicit source-sync
 script. The optional method-card extraction script uses OpenAI only at build
 time and writes generated artifacts under ignored `.source-cache/`; it does
 not change the deterministic runtime boundary.
+
+The default transport is local stdio. `MCP_TRANSPORT=http` or Railway starts a
+public Streamable HTTP server with `/health` and `/mcp`; sessions are held in
+memory, capped at 100, and closed after 30 minutes without a request.
 
 ## Source and licensing
 
