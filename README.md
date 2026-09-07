@@ -6,7 +6,8 @@ Solutions: A Toolbox for Liberation**.
 The server turns the online toolbox's connected values, principles, questions,
 solutions, and stories into eight deterministic tools for organizers,
 educators, facilitators, researchers, and community designers. It makes no LLM
-or network calls at runtime.
+or live source calls at runtime; optional hosted usage telemetry is described
+under [Privacy and telemetry](#privacy-and-telemetry).
 
 ## What is included
 
@@ -110,7 +111,7 @@ claude mcp add-json beautiful-solutions \
   -s local
 ```
 
-No API key, database, or live web connection is required at runtime.
+No API key, database, or live web connection is required to run the tools.
 
 ### Hosted server
 
@@ -127,7 +128,22 @@ For Streamable HTTP, set `MCP_TRANSPORT=http` and optionally `PORT` (default
 `3000`), then run `npm start`. The public health route is `/health`; the MCP
 route is `/mcp`. Railway environments select HTTP automatically. HTTP sessions
 are stored only in process memory, capped at 100, and closed after 30 minutes
-without a request. The server makes no outbound network calls.
+without a request.
+
+### Privacy and telemetry
+
+The hosted server can send aggregate usage events to the same PostHog project
+as bookpower.org when its operator configures `POSTHOG_API_KEY`. Telemetry is
+disabled when the variable is absent and failures never change MCP behavior.
+
+Only an anonymous hash of a random server-session ID, server identity,
+normalized client-software family and bounded major-version bucket, tool name,
+duration, and error state are sent. Raw client names are reduced to a known
+family or `other`; invalid versions are omitted. Tool arguments, results,
+challenge descriptions, discussion context, source content, entry IDs, user
+identities, request headers, credentials, and user IP addresses are never
+passed to the analytics component. Local stdio use therefore remains offline by
+default.
 
 Anyone redistributing or hosting the server must preserve the attribution and
 review the NonCommercial and ShareAlike conditions below.
