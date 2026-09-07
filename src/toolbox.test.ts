@@ -170,4 +170,11 @@ describe('praxis tools', () => {
     assert.equal(guide.result.sourceLinkedQuestions.length, 0);
     assert.ok(guide.result.flow.length >= 4);
   });
+
+  it('limits contextual guide lenses to literal source title or summary matches', () => {
+    const guide = buildDiscussionGuide(['bsol-abolition'], 'different');
+
+    assert.deepEqual(guide.result.sourceLinkedQuestions, []);
+    assert.deepEqual(guide.result.sourceLinkedValues, []);
+  });
 });

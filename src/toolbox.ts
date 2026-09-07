@@ -160,7 +160,10 @@ function uniqueCompact(items: RuntimeToolboxEntry[]) {
 function contextualLenses(candidates: RuntimeToolboxEntry[], type: EntryType, context?: string) {
   const selectedType = candidates.filter(entry => entry.type === type);
   if (!context) return uniqueCompact(selectedType).slice(0, 5);
-  return searchEntries(selectedType, context, { limit: 5 }).map(({ entry }) => compact(entry));
+  return searchEntries(selectedType, context, {
+    limit: 5,
+    requireLiteralSourceTextMatch: true,
+  }).map(({ entry }) => compact(entry));
 }
 
 export function buildDiscussionGuide(ids: string[], context?: string) {

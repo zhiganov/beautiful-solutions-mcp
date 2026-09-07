@@ -50,6 +50,7 @@ export interface SearchFilters {
   limit?: number;
   relatedBoostIds?: Set<string>;
   minDirectMatches?: number;
+  requireLiteralSourceTextMatch?: boolean;
 }
 
 export interface SearchResult {
@@ -113,9 +114,16 @@ export function searchEntries(entries: RuntimeToolboxEntry[], query: string, fil
     let score = 0;
     const matchedFields: string[] = [];
     const directMatchedTokens = new Set<string>();
+    let hasLiteralSourceTextMatch = false;
 
     for (const [fieldName, tokens] of Object.entries(directFields) as [keyof typeof directFields, Set<string>][]) {
       const matches = queryTokens.filter(token => tokens.has(token));
+      if (
+        (fieldName === 'title' || fieldName === 'summary')
+        && literalQueryTokens.some(token => tokens.has(token))
+      ) {
+        hasLiteralSourceTextMatch = true;
+      }
       if (matches.length > 0) {
         score += matches.length * directWeights[fieldName];
         score += matches.filter(token => expandedOnlyTokens.has(token)).length * 3;
@@ -123,6 +131,8 @@ export function searchEntries(entries: RuntimeToolboxEntry[], query: string, fil
         matches.forEach(token => directMatchedTokens.add(token));
       }
     }
+
+    if (filters.requireLiteralSourceTextMatch && !hasLiteralSourceTextMatch) return [];
 
     const normalizedTitle = normalize(entry.title);
     const normalizedSummary = normalize(entry.summary);
