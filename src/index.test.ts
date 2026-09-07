@@ -81,6 +81,7 @@ describe('MCP analytics boundary', () => {
       assert.equal(toolCall.toolName, 'map_challenge');
       assert.equal(toolCall.isError, false);
       assert.equal(toolCall.clientFamily, 'claude-code');
+      assert.equal(toolCall.clientVersion, '1');
       assert.equal(toolCalls[1].toolName, 'get_entry');
       assert.equal(toolCalls[1].isError, true);
       assert.deepEqual(Object.keys(toolCall).sort(), [

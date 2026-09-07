@@ -66,20 +66,25 @@ const CLIENT_FAMILIES: ReadonlyArray<readonly [string, ClientFamily]> = [
   ['vscode', 'vscode'],
   ['zed', 'zed'],
 ];
-const SAFE_VERSION = /^\d+(?:\.\d+){0,3}(?:[-+][0-9A-Za-z.-]+)?$/;
+const SAFE_VERSION = /^(\d{1,3})(?:\.\d{1,3}){0,3}(?:[-+][0-9A-Za-z.-]{1,16})?$/;
 
 function anonymousDistinctId(sessionId: string) {
   return `mcp:${createHash('sha256').update(sessionId).digest('hex')}`;
+}
+
+function majorVersion(version: string) {
+  return SAFE_VERSION.exec(version)?.[1];
 }
 
 export function classifyClient(client: { name: string; version: string } | undefined) {
   if (!client) return {};
   const normalizedName = client.name.toLowerCase();
   const family = CLIENT_FAMILIES.find(([candidate]) => normalizedName.includes(candidate))?.[1] ?? 'other';
+  const version = majorVersion(client.version);
   return {
     clientFamily: family,
-    ...(family !== 'other' && SAFE_VERSION.test(client.version)
-      ? { clientVersion: client.version }
+    ...(family !== 'other' && version
+      ? { clientVersion: version }
       : {}),
   };
 }
@@ -104,9 +109,8 @@ export function createPostHogAnalytics(
       };
 
       if (event.clientFamily) properties.client_name = event.clientFamily;
-      if (event.clientVersion && SAFE_VERSION.test(event.clientVersion)) {
-        properties.client_version = event.clientVersion;
-      }
+      const version = event.clientVersion && majorVersion(event.clientVersion);
+      if (version) properties.client_version = version;
       if (event.event === 'mcp_tool_call') {
         properties.tool_name = event.toolName;
         properties.duration_ms = event.durationMs;

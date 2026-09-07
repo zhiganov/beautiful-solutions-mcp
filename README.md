@@ -137,12 +137,13 @@ as bookpower.org when its operator configures `POSTHOG_API_KEY`. Telemetry is
 disabled when the variable is absent and failures never change MCP behavior.
 
 Only an anonymous hash of a random server-session ID, server identity,
-normalized client-software family and safe version, tool name, duration, and
-error state are sent. Raw client names are reduced to a known family or
-`other`. Tool arguments, results, challenge descriptions, discussion context,
-source content, entry IDs, user identities, request headers, credentials, and
-user IP addresses are never passed to the analytics component. Local stdio use
-therefore remains offline by default.
+normalized client-software family and bounded major-version bucket, tool name,
+duration, and error state are sent. Raw client names are reduced to a known
+family or `other`; invalid versions are omitted. Tool arguments, results,
+challenge descriptions, discussion context, source content, entry IDs, user
+identities, request headers, credentials, and user IP addresses are never
+passed to the analytics component. Local stdio use therefore remains offline by
+default.
 
 Anyone redistributing or hosting the server must preserve the attribution and
 review the NonCommercial and ShareAlike conditions below.

@@ -20,7 +20,7 @@ turning situated stories into universal prescriptions.
 | R5 | Comply with CC BY-NC-SA 4.0: attribution, license link, change notice, ShareAlike, NonCommercial restriction, and no implied endorsement. |
 | R6 | Exclude images and avoid unsupported claims, outcome guarantees, or decontextualized recommendations. |
 | R7 | Work over local stdio and public Streamable HTTP with no database, API key, or runtime outbound network dependency for tool behavior. Optional hosted telemetry must be disabled without configuration, fail open, and never receive tool arguments or outputs. |
-| R8 | Measure aggregate server use through an explicit metadata allowlist: anonymous session hash, server identity, normalized client-software family and safe version, tool name, duration, and error state. Exclude raw client names, user identities, request headers, IP addresses, credentials, arguments, outputs, source content, and entry IDs. |
+| R8 | Measure aggregate server use through an explicit metadata allowlist: anonymous session hash, server identity, normalized client-software family and bounded major-version bucket, tool name, duration, and error state. Exclude raw client names, invalid versions, user identities, request headers, IP addresses, credentials, arguments, outputs, source content, and entry IDs. |
 
 ## Selected shape: static source graph
 

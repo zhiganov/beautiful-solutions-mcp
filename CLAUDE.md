@@ -66,12 +66,12 @@ it does not change the deterministic tool-output boundary.
 When `POSTHOG_API_KEY` is present, `src/analytics.ts` sends fail-open,
 metadata-only `mcp_initialize` and `mcp_tool_call` events to the shared Book
 Power PostHog project. Its event payload is an explicit allowlist: anonymous
-session hash, server identity, normalized client-software family and safe
-version, tool name, duration, and error state. Raw client names are reduced to a
-known family or `other`. It never receives or sends tool arguments, results,
-source content, entry IDs, user identities, request headers, or IP addresses.
-With no key, telemetry is disabled and the server makes no outbound runtime
-calls.
+session hash, server identity, normalized client-software family and bounded
+major-version bucket, tool name, duration, and error state. Raw client names are
+reduced to a known family or `other`; invalid versions are omitted. It never
+receives or sends tool arguments, results, source content, entry IDs, user
+identities, request headers, or IP addresses. With no key, telemetry is disabled
+and the server makes no outbound runtime calls.
 
 The default transport is local stdio. `MCP_TRANSPORT=http` or Railway starts a
 public Streamable HTTP server with `/health` and `/mcp`; sessions are held in

@@ -16,11 +16,15 @@ describe('metadata-only analytics', () => {
   it('reduces client-provided identity strings to a safe software family', () => {
     assert.deepEqual(
       classifyClient({ name: 'Claude Code — Jane Example', version: '1.2.3' }),
-      { clientFamily: 'claude-code', clientVersion: '1.2.3' },
+      { clientFamily: 'claude-code', clientVersion: '1' },
     );
     assert.deepEqual(
       classifyClient({ name: 'Jane Example private client', version: 'jane@example.org' }),
       { clientFamily: 'other' },
+    );
+    assert.deepEqual(
+      classifyClient({ name: 'Claude Code', version: '15551234567' }),
+      { clientFamily: 'claude-code' },
     );
   });
 
@@ -61,7 +65,7 @@ describe('metadata-only analytics', () => {
           server_version: '0.1.1',
           $process_person_profile: false,
           client_name: 'claude-code',
-          client_version: '1.2.3',
+          client_version: '1',
           tool_name: 'map_challenge',
           duration_ms: 42,
           is_error: false,
