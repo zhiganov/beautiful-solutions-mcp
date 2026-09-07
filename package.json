@@ -22,9 +22,12 @@
     "build": "tsc && node scripts/copy-data.mjs",
     "start": "node dist/index.js",
     "dev": "npm run build && npm start",
-    "test": "npm run build && node --test dist/**/*.test.js",
+    "test": "npm run build && node --test dist/**/*.test.js scripts/**/*.test.mjs",
     "sync-source": "node scripts/sync-source.mjs",
-    "extract:pilot": "node scripts/extract-method-cards.mjs --pilot"
+    "extract:pilot": "node scripts/extract-method-cards.mjs --pilot",
+    "extract:full": "node scripts/extract-method-cards.mjs --full",
+    "audit:cards": "node scripts/audit-method-card-corpus.mjs",
+    "integrate:cards": "node scripts/integrate-method-cards.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

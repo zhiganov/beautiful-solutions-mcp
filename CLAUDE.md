@@ -13,6 +13,10 @@ npm run sync-source  # refresh the English source snapshot from the official API
 npm run build        # compile TypeScript and copy source data to dist
 npm test             # build and run focused tests
 npm start            # run the stdio MCP server
+npm run extract:pilot # run the calibrated five-entry build-time pilot
+npm run extract:full  # extract and verify all 85 entries for corpus review
+npm run audit:cards   # validate the full artifact and write the review worksheet
+npm run integrate:cards # write manually accepted cards into tracked runtime data
 ```
 
 ## Architecture
@@ -26,15 +30,31 @@ src/
   data/
     toolbox.json      tracked adapted snapshot of 85 English entries
     source-manifest.json
+    method-cards.json tracked accepted cards without complete write-ups or
+                      build-time verification quotations
+    method-card-manifest.json
+                      integrity metadata for method-cards.json
 scripts/
   sync-source.mjs     official API ingestion and validation
   copy-data.mjs       copies runtime JSON into dist
   extract-method-cards.mjs
-                       optional build-time GPT extraction, verification,
-                       adjudication, and bounded regeneration
+                        optional build-time GPT extraction, verification,
+                        adjudication, and bounded regeneration
+  audit-method-card-corpus.mjs
+                        validates the ignored full artifact and writes an
+                        ignored item-by-item review worksheet
+  integrate-method-cards.mjs
+                        admits only hash-bound accepted cards into runtime data
 evaluation/
   method-card-pilot-labels.json
-                       source-derived manual sentinel decisions
+                        source-derived manual sentinel decisions
+  method-card-corpus-overrides.json
+                        fingerprinted full-corpus human decisions with complete
+                        candidate identity and evidence, plus explicit
+                        source-grounded summary replacements; these take
+                        precedence over verifier disagreements
+  method-card-corpus-acceptance.json
+                        manual acceptance bound to all 85 final-card hashes
 ```
 
 No LLM, database, vector store, or network call is used at runtime. The

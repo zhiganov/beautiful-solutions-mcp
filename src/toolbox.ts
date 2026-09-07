@@ -1,13 +1,28 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { ATTRIBUTION, SOURCE_MANIFEST, TOOLBOX, attributed } from './data.js';
+import {
+  ATTRIBUTION,
+  METHOD_CARD_MANIFEST,
+  METHOD_CARDS,
+  SOURCE_MANIFEST,
+  TOOLBOX,
+  attributed,
+} from './data.js';
 import { searchEntries, tokenize } from './search.js';
-import type { EntryType, ToolboxEntry } from './types.js';
+import type { EntryType, RuntimeToolboxEntry } from './types.js';
 
-const entries = TOOLBOX.entries;
+const methodCardById = new Map(METHOD_CARDS.entries.map(card => [card.entryId, card]));
+const entries: RuntimeToolboxEntry[] = TOOLBOX.entries.map(entry => {
+  const methodCard = methodCardById.get(entry.id);
+  if (!methodCard) throw new Error(`Runtime method-card snapshot is missing ${entry.id}.`);
+  return { ...entry, methodCard };
+});
+if (methodCardById.size !== TOOLBOX.entries.length) {
+  throw new Error('Runtime method-card snapshot does not cover the complete toolbox.');
+}
 const byId = new Map(entries.map(entry => [entry.id, entry]));
 
-function compact(entry: ToolboxEntry) {
+function compact(entry: RuntimeToolboxEntry) {
   return {
     id: entry.id,
     type: entry.type,
@@ -15,11 +30,12 @@ function compact(entry: ToolboxEntry) {
     sector: entry.sector,
     summary: entry.summary,
     authors: entry.authors,
+    methodSummary: entry.methodCard.oneSentence,
     sourceUrl: entry.sourceUrl,
   };
 }
 
-function requireEntry(id: string): ToolboxEntry {
+function requireEntry(id: string): RuntimeToolboxEntry {
   const entry = byId.get(id);
   if (!entry) {
     const close = searchEntries(entries, id.replace(/^bsol-/, '').replaceAll('-', ' '), { limit: 5 });
@@ -47,12 +63,13 @@ export function searchToolbox(query: string, filters: { type?: EntryType; sector
   const results = searchEntries(entries, query, filters);
   return attributed({
     query,
-    note: 'Scores reflect deterministic lexical matches, not evidence that an entry will fit a particular context.',
+    note: 'Scores reflect deterministic token matches over source fields and reviewed method cards, with a small solar/renewable synonym bridge; they are not evidence that an entry will fit a particular context.',
     count: results.length,
-    entries: results.map(({ entry, score, matchedFields }) => ({
+    entries: results.map(({ entry, score, matchedFields, matchedTokens }) => ({
       ...compact(entry),
       score,
       matchedFields,
+      matchedTokens,
     })),
   });
 }
@@ -61,7 +78,8 @@ export function getEntry(id: string) {
   const entry = requireEntry(id);
   return attributed({
     ...entry,
-    readingBoundary: 'This record contains a concise source-authored summary and structural metadata, not the complete entry text. Use sourceUrl to read the full entry.',
+    methodCardNotice: 'The method card is an adapted, manually reviewed synthesis grounded in the source. It is not a source quotation, recommendation, or claim of local applicability.',
+    readingBoundary: 'This record contains a concise source-authored summary, structural metadata, and an adapted method card—not the complete entry text. Use sourceUrl to read the full entry.',
   });
 }
 
@@ -99,10 +117,11 @@ export function mapChallenge(challenge: string, options: { sector?: string; maxP
         relatedBoostIds,
         minDirectMatches,
       });
-      return [type, matches.map(({ entry, score, matchedFields }) => ({
+      return [type, matches.map(({ entry, score, matchedFields, matchedTokens }) => ({
         ...compact(entry),
         score,
         matchedFields,
+        matchedTokens,
       }))];
     }),
   );
@@ -110,7 +129,7 @@ export function mapChallenge(challenge: string, options: { sector?: string; maxP
   return attributed({
     challenge,
     sector: options.sector,
-    method: 'Weighted lexical matching, with a visible boost for relationships attached to the five strongest lexical matches.',
+    method: 'Weighted token matching over source fields and reviewed method cards, with a small solar/renewable synonym bridge and a visible boost for relationships attached to the five strongest direct matches.',
     caution: 'These are exploration leads, not recommendations. Test relevance with people in the affected context.',
     lenses,
   });
@@ -125,6 +144,7 @@ export function compareEntries(ids: string[]) {
       epigraphs: entry.epigraphs,
       pullQuote: entry.pullQuote,
       references: entry.references,
+      methodCard: entry.methodCard,
       relatedCounts: Object.fromEntries(
         (['value', 'principle', 'question', 'solution', 'story'] as EntryType[])
           .map(type => [type, entry.related.filter(item => item.type === type).length]),
@@ -133,19 +153,22 @@ export function compareEntries(ids: string[]) {
   });
 }
 
-function uniqueCompact(items: ToolboxEntry[]) {
+function uniqueCompact(items: RuntimeToolboxEntry[]) {
   return [...new Map(items.map(item => [item.id, item])).values()].map(compact);
 }
 
-function contextualLenses(candidates: ToolboxEntry[], type: EntryType, context?: string) {
+function contextualLenses(candidates: RuntimeToolboxEntry[], type: EntryType, context?: string) {
   const selectedType = candidates.filter(entry => entry.type === type);
   if (!context) return uniqueCompact(selectedType).slice(0, 5);
-  return searchEntries(selectedType, context, { limit: 5 }).map(({ entry }) => compact(entry));
+  return searchEntries(selectedType, context, {
+    limit: 5,
+    requireLiteralSourceTextMatch: true,
+  }).map(({ entry }) => compact(entry));
 }
 
 export function buildDiscussionGuide(ids: string[], context?: string) {
   const selected = [...new Set(ids)].map(requireEntry);
-  const linked = selected.flatMap(entry => entry.related.map(item => byId.get(item.id)).filter(Boolean) as ToolboxEntry[]);
+  const linked = selected.flatMap(entry => entry.related.map(item => byId.get(item.id)).filter(Boolean) as RuntimeToolboxEntry[]);
   const questionCandidates = [
     ...selected.filter(entry => entry.type === 'question'),
     ...linked.filter(entry => entry.type === 'question'),
@@ -160,15 +183,24 @@ export function buildDiscussionGuide(ids: string[], context?: string) {
     ...questions.map(entry => entry.title),
     ...values.map(entry => `How would “${entry.title}” change the choices we make?`),
   ];
+  const methodQuestions = selected.flatMap(entry =>
+    entry.methodCard.transferQuestions.slice(0, 2).map(item => ({
+      entryId: entry.id,
+      entryTitle: entry.title,
+      ...item,
+      sourceUrl: entry.sourceUrl,
+    }))).slice(0, 8);
 
   return attributed({
     title: 'Beautiful Solutions discussion scaffold',
     context,
-    generatedNotice: 'Prompts below are original scaffolding generated from selected source titles and relationships; they are not quotations from the book.',
+    generatedNotice: 'Generic flow and value-lens prompts are original runtime scaffolding; they are not quotations from the book.',
+    methodCardNotice: 'Method cards and transfer questions are adapted, manually reviewed syntheses grounded in the source; they are not source quotations or recommendations.',
     lensNotice: 'Source-linked questions and values are included only when their own title or summary matches the supplied context. Empty lists mean no contextual source match was found.',
-    readings: selected.map(compact),
+    readings: selected.map(entry => ({ ...compact(entry), methodCard: entry.methodCard })),
     sourceLinkedQuestions: questions,
     sourceLinkedValues: values,
+    adaptedTransferQuestions: methodQuestions,
     flow: [
       {
         phase: 'Locate the challenge',
@@ -185,10 +217,12 @@ export function buildDiscussionGuide(ids: string[], context?: string) {
       },
       {
         phase: 'Interrogate transfer',
-        prompts: [
-          'Which parts appear transferable, and which depend on a history or place we do not share?',
-          'What harms could come from copying the form without the underlying relationships?',
-        ],
+        prompts: methodQuestions.length > 0
+          ? methodQuestions.map(item => item.question)
+          : [
+            'Which parts appear transferable, and which depend on a history or place we do not share?',
+            'What harms could come from copying the form without the underlying relationships?',
+          ],
       },
       ...(lensPrompts.length > 0 ? [{
         phase: 'Use the toolbox lenses',
@@ -207,17 +241,34 @@ export function buildDiscussionGuide(ids: string[], context?: string) {
 
 export function getSourceInfo() {
   const dataText = readFileSync(new URL('./data/toolbox.json', import.meta.url));
+  const methodCardsText = readFileSync(new URL('./data/method-cards.json', import.meta.url));
   const actualHash = createHash('sha256').update(dataText).digest('hex');
+  const actualMethodCardsHash = createHash('sha256').update(methodCardsText).digest('hex');
   return attributed({
     ...SOURCE_MANIFEST,
+    methodCardAdaptation: {
+      entries: METHOD_CARDS.entries.length,
+      license: METHOD_CARDS.license,
+      changes: METHOD_CARDS.changes,
+    },
     integrity: {
-      expectedSha256: SOURCE_MANIFEST.toolboxSha256,
-      actualSha256: actualHash,
-      matches: actualHash === SOURCE_MANIFEST.toolboxSha256,
+      toolbox: {
+        expectedSha256: SOURCE_MANIFEST.toolboxSha256,
+        actualSha256: actualHash,
+        matches: actualHash === SOURCE_MANIFEST.toolboxSha256,
+      },
+      methodCards: {
+        expectedSha256: METHOD_CARD_MANIFEST.methodCardsSha256,
+        actualSha256: actualMethodCardsHash,
+        matches: actualMethodCardsHash === METHOD_CARD_MANIFEST.methodCardsSha256,
+        acceptedOn: METHOD_CARD_MANIFEST.acceptedOn,
+        entries: METHOD_CARD_MANIFEST.entries,
+      },
     },
     limitations: [
       'English entries only.',
       'The snapshot contains concise source-authored summaries and structural metadata, not complete entry write-ups.',
+      'Method cards are adapted, manually reviewed syntheses; build-time verification quotations are excluded from runtime data.',
       'Images are excluded because image permissions may differ.',
       'Search relevance is lexical and deterministic, not semantic or prescriptive.',
       'CC BY-NC-SA 4.0 prohibits commercial use without separate permission.',

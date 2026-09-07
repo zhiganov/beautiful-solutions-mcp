@@ -3,17 +3,28 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+import {
+  candidateItemFingerprint,
+  candidateItemText,
+  normalizeInferenceAdmissions,
+  validateManualReplacementIdentities,
+  validateReviewLabelIdentities,
+} from './method-card-verification-policy.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const sourcePath = resolve(projectRoot, '.source-cache/toolbox-full.json');
 const calibrationPath = resolve(projectRoot, 'evaluation/method-card-pilot-labels.json');
+const corpusOverridesPath = resolve(projectRoot, 'evaluation/method-card-corpus-overrides.json');
 const cacheDir = resolve(projectRoot, '.source-cache/extraction-cache');
 const verificationCacheDir = resolve(projectRoot, '.source-cache/verification-cache');
 const pilotOutputPath = resolve(projectRoot, '.source-cache/method-cards-pilot.json');
+const fullOutputPath = resolve(projectRoot, '.source-cache/method-cards-full.json');
 const apiUrl = 'https://api.openai.com/v1/responses';
 const promptVersion = 'method-card-v4-problem-context';
+const fullPromptVersion = 'method-card-v6-type-aware-full-corpus';
 const verificationPromptVersion = 'method-card-verifier-v3-cross-sentence-calibration';
-const regenerationPromptVersion = 'method-card-regeneration-v1';
+const fullVerificationPromptVersion = 'method-card-verifier-v6-causality-role-and-inference-policy';
+const regenerationPromptVersion = 'method-card-regeneration-v2-open-inquiry';
 const defaultModel = 'gpt-5-mini';
 const defaultVerificationModel = 'gpt-5.4-mini';
 const maxRegenerationRounds = 2;
@@ -83,21 +94,64 @@ const verificationResultSchema = z.object({
   }).strict()).max(100),
 }).strict();
 
+const pilotReviewLabelSchema = z.object({
+  entryId: z.string().min(1),
+  itemId: z.string().min(1),
+  itemText: z.string().min(1),
+  itemFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  expectedVerdict: z.enum(['supported', 'misclassified', 'unsupported']),
+  expectedTargetField: z.enum([...cardFields, 'remove']),
+  note: z.string().min(1),
+}).strict();
+
+const candidateIdentitySchema = z.object({
+  itemId: z.string().min(1),
+  currentField: z.enum(cardFields),
+  content: z.union([
+    z.object({ claim: z.string().min(1) }).strict(),
+    z.object({ actor: z.string().min(1), role: z.string().min(1) }).strict(),
+    z.object({ question: z.string().min(1), rationale: z.string().min(1) }).strict(),
+    z.object({ label: z.string().min(1) }).strict(),
+  ]),
+  evidenceSentenceIds: z.array(z.string().regex(/^S\d{3}$/)).min(1).max(3),
+}).strict();
+
+const corpusReviewLabelSchema = pilotReviewLabelSchema.extend({
+  candidate: candidateIdentitySchema,
+}).strict();
+
+const manualReplacementSchema = z.object({
+  entryId: z.string().min(1),
+  replacesItemFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  replacesCandidate: candidateIdentitySchema,
+  replacementFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  replacement: candidateIdentitySchema,
+  note: z.string().min(1),
+}).strict();
+
 const calibrationSchema = z.object({
   schemaVersion: z.literal(1),
   kind: z.string().min(1),
   sourceSha256: z.string().regex(/^[a-f0-9]{64}$/),
   candidatePromptVersion: z.string().min(1),
   candidateModel: z.string().min(1),
-  labels: z.array(z.object({
-    entryId: z.string().min(1),
-    itemId: z.string().min(1),
-    itemText: z.string().min(1),
-    itemFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
-    expectedVerdict: z.enum(['supported', 'misclassified', 'unsupported']),
-    expectedTargetField: z.enum([...cardFields, 'remove']),
-    note: z.string().min(1),
-  }).strict()).min(1),
+  labels: z.array(pilotReviewLabelSchema).min(1),
+}).strict();
+
+const corpusOverridesSchema = z.object({
+  schemaVersion: z.literal(2),
+  kind: z.string().min(1),
+  sourceSha256: z.string().regex(/^[a-f0-9]{64}$/),
+  candidatePromptVersion: z.string().min(1),
+  candidateModel: z.string().min(1),
+  verificationPromptVersion: z.string().min(1),
+  verificationModel: z.string().min(1),
+  labels: z.array(corpusReviewLabelSchema).min(1),
+  manualReplacements: z.array(manualReplacementSchema),
+  supersededLabels: z.array(z.object({
+    label: corpusReviewLabelSchema,
+    supersededReason: z.string().min(1),
+  }).strict()).optional(),
 }).strict();
 
 const evidenceClaimJsonSchema = {
@@ -249,6 +303,18 @@ Use these field boundaries:
 
 Keep sentence IDs only in evidenceSentenceIds. Never put IDs, “groundedIn:”, or other citation syntax in claims, questions, rationales, roles, or labels.`;
 
+const fullCorpusInstructions = `${instructions}
+
+Respect the source entry's type instead of forcing every entry into the shape of an institutional solution:
+- solution and story: prioritize concrete mechanisms, actors and roles, enabling conditions, constraints, observable structures, and transfer questions.
+- principle: capture the principle's purpose and any explicitly described practices or processes; leave institutional fields empty when the source does not supply them.
+- value: capture what the value means, why it matters, and any explicit consequences or manifestations; do not invent an implementation mechanism, organization, or actor.
+- question: preserve the inquiry and the stakes or context the source explicitly gives; do not turn an open question into an answer, recommendation, or institutional model.
+
+For a question entry, the oneSentence field must itself preserve the source's inquiry—for example by stating what the entry asks and why the source says it matters. It must not assert one universal answer to that inquiry.
+
+For every type, empty arrays are preferable to category errors. Transfer questions may extend inquiry beyond the source only when every factual premise in the question and rationale is source-supported.`;
+
 const verificationInstructions = `You are an independent semantic verifier for a method card extracted from Beautiful Solutions: A Toolbox for Liberation.
 
 Audit every supplied candidate item against the numbered source sentences. Do not rewrite any item. Return exactly one decision for each itemId and no additional itemIds.
@@ -281,8 +347,42 @@ Apply these calibration rules strictly:
 - Preserve attribution when a claim depends on a named speaker's comparative or outcome assertion; otherwise mark the generalized claim unsupported.
 - If your rationale needs words such as “implies,” “suggests,” or “indicates” to bridge source evidence to a factual item, the item is not supported. Transfer questions may inquire beyond the source, but their premises must still be entailed.`;
 
+const fullCorpusVerificationInstructions = `${verificationInstructions}
+
+Apply entry-type boundaries as part of category fit:
+- solution and story entries may describe institutional mechanisms and actor roles when the source entails them.
+- principle entries may describe practices, but do not require institutional machinery the source does not supply.
+- value entries should preserve meaning, purpose, and explicit manifestations without inventing an implementing organization or actor.
+- question entries must preserve inquiry. In a question entry, oneSentence is unsupported if it turns the source's open question into a universal answer, even when the source discusses possible responses.
+
+Mark an item unsupported when it merely duplicates another candidate item in the same field without adding a materially distinct claim, role, question, or observable feature. This includes substantially rephrased descriptions of the same event or structure, even when their wording or evidence lists differ.
+
+Apply these additional fidelity checks:
+- Output invariant: actorsAndRoles, transferQuestions, searchConcepts, and oneSentence are never reclassified. If one is supported in its current field, keep it there; otherwise mark it unsupported with targetField remove.
+- Correlation, sequence, or proximity in the source does not establish a root cause, causal contribution, or enabling relationship.
+- The existence of an organization, example, event, membership base, network, or legal form is not an enabling condition unless the source says it enabled or supported the model or practice. A circular restatement of the model or one of its mechanisms is not a separate enabling condition. Reclassify it only when another field directly fits.
+- Do not combine separately supported facts into a transfer question that presupposes an unstated causal relationship between them.
+- Transfer questions asking what was “best,” “most important,” or “most effective” are unsupported rankings.
+- Preserve which actor performed an action. A committee, chairperson, membership, partner, regulator, or government cannot inherit another actor's source-stated role.
+- Preserve place and example boundaries. A statement about one country, organization, or example cannot be applied to another named case unless the source explicitly connects them.
+- An aspiration, proposed future structure, or normative call is not an observable signal unless the source also reports it as an existing structure or practice.
+- Treat “ensure” and “guarantee” as unsupported certainty when a synthesized item turns an aspiration, purpose, association, or reported example into a promised outcome.`;
+
+const regenerationInstructions = `
+
+When replacing a rejected card, transfer questions need special care. Ask open, source-anchored questions that do not assume an unstated past practice, causal relationship, comparative ranking, resource requirement, implementation, effect, or outcome. Prefer prospective forms such as “What might…?”, “How could…?”, or “What would participants need to examine…?” when the source invites experimentation but does not report what groups have already done. A question may ask for missing operational detail, but its factual setup must be stated by the source.`;
+
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
+}
+
+class QualityGateError extends Error {
+  constructor(message, stage, usage) {
+    super(message);
+    this.name = 'QualityGateError';
+    this.stage = stage;
+    this.usage = usage;
+  }
 }
 
 async function loadEnvFile() {
@@ -385,12 +485,21 @@ function validateMaterializedCard(entry, card) {
     }
   });
 
-  if (card.mechanisms.length === 0) problems.push('no mechanisms extracted');
-  if (card.actorsAndRoles.length === 0) problems.push('no actors and roles extracted');
-  if (card.transferQuestions.length < 2) problems.push('fewer than two transfer questions extracted');
-  if (card.searchConcepts.length < 3) problems.push('fewer than three search concepts extracted');
-  if (card.enablingConditions.length + card.constraints.length + card.tensions.length === 0) {
-    problems.push('no conditions, constraints, or tensions extracted');
+  if (entry.type === 'solution' || entry.type === 'story') {
+    if (card.mechanisms.length === 0) problems.push('no mechanisms extracted');
+    if (card.actorsAndRoles.length === 0) problems.push('no actors and roles extracted');
+    if (card.searchConcepts.length < 3) problems.push('fewer than three search concepts extracted');
+  } else {
+    const substantiveClaims = card.purposes.length
+      + card.problemContext.length
+      + card.mechanisms.length
+      + card.enablingConditions.length
+      + card.constraints.length
+      + card.tensions.length
+      + card.observableSignals.length;
+    if (substantiveClaims === 0) problems.push('no substantive claims extracted');
+    if (card.transferQuestions.length === 0) problems.push('no transfer questions extracted');
+    if (card.searchConcepts.length < 2) problems.push('fewer than two search concepts extracted');
   }
   card.purposes.forEach((item, index) => {
     if (/^(?:to\s+)?(?:describe|document|highlight|illustrate|explain|present)\b/i.test(item.claim)) {
@@ -425,7 +534,14 @@ function outputText(response) {
     .join('');
 }
 
-async function requestCard(entry, apiKey, model, previousProblems = [], semanticFeedback) {
+async function requestCard(
+  entry,
+  apiKey,
+  model,
+  extractionInstructions,
+  previousProblems = [],
+  semanticFeedback,
+) {
   const sentences = sourceSentences(entry.body);
   const input = [
     sourceInput(entry, sentences),
@@ -444,13 +560,14 @@ async function requestCard(entry, apiKey, model, previousProblems = [], semantic
   ].join('\n');
   const response = await fetch(apiUrl, {
     method: 'POST',
+    signal: AbortSignal.timeout(180_000),
     headers: {
       authorization: `Bearer ${apiKey}`,
       'content-type': 'application/json',
     },
     body: JSON.stringify({
       model,
-      instructions,
+      instructions: extractionInstructions,
       input,
       reasoning: { effort: 'minimal' },
       text: {
@@ -491,7 +608,7 @@ async function requestCard(entry, apiKey, model, previousProblems = [], semantic
   };
 }
 
-async function extractEntry(entry, apiKey, model) {
+async function extractEntry(entry, apiKey, model, extractionConfig) {
   const sourceHash = sha256(JSON.stringify({
     id: entry.id,
     type: entry.type,
@@ -500,7 +617,7 @@ async function extractEntry(entry, apiKey, model) {
     authors: entry.authors,
     body: entry.body,
   }));
-  const cacheKey = sha256(`${promptVersion}\n${model}\n${sourceHash}`);
+  const cacheKey = sha256(`${extractionConfig.promptVersion}\n${model}\n${sourceHash}`);
   const cachePath = resolve(cacheDir, `${entry.id}-${cacheKey.slice(0, 16)}.json`);
   const attemptLogPath = resolve(cacheDir, `${entry.id}-${cacheKey.slice(0, 16)}-${Date.now()}-attempts.json`);
 
@@ -509,7 +626,7 @@ async function extractEntry(entry, apiKey, model) {
     const parsed = methodCardSchema.safeParse(cached.card);
     const validation = parsed.success ? validateMaterializedCard(entry, parsed.data) : { problems: ['schema failure'] };
     if (
-      cached.promptVersion === promptVersion
+      cached.promptVersion === extractionConfig.promptVersion
       && cached.model === model
       && cached.sourceHash === sourceHash
       && validation.problems.length === 0
@@ -525,7 +642,13 @@ async function extractEntry(entry, apiKey, model) {
   const responseIds = [];
   const attemptRecords = [];
   for (let attempt = 1; attempt <= 2; attempt += 1) {
-    const result = await requestCard(entry, apiKey, model, previousProblems);
+    const result = await requestCard(
+      entry,
+      apiKey,
+      model,
+      extractionConfig.instructions,
+      previousProblems,
+    );
     addUsage(requestUsage, result.usage);
     responseIds.push(result.responseId);
     attemptRecords.push({
@@ -536,7 +659,7 @@ async function extractEntry(entry, apiKey, model) {
     });
     await writeFile(attemptLogPath, `${JSON.stringify({
       schemaVersion: 1,
-      promptVersion,
+      promptVersion: extractionConfig.promptVersion,
       model,
       sourceHash,
       attempts: attemptRecords,
@@ -545,7 +668,7 @@ async function extractEntry(entry, apiKey, model) {
     if (result.problems.length === 0) {
       const artifact = {
         schemaVersion: 1,
-        promptVersion,
+        promptVersion: extractionConfig.promptVersion,
         model,
         sourceHash,
         extractedAt: new Date().toISOString(),
@@ -561,10 +684,22 @@ async function extractEntry(entry, apiKey, model) {
     previousProblems = result.problems;
   }
 
-  throw new Error(`${entry.id}: failed quality gates after two attempts (${previousProblems.join('; ')})`);
+  throw new QualityGateError(
+    `${entry.id}: failed extraction quality gates after two attempts (${previousProblems.join('; ')})`,
+    'extraction',
+    requestUsage,
+  );
 }
 
-async function regenerateEntry(entry, previousExtraction, semanticFeedback, apiKey, model, round) {
+async function regenerateEntry(
+  entry,
+  previousExtraction,
+  semanticFeedback,
+  apiKey,
+  model,
+  extractionConfig,
+  round,
+) {
   const feedbackHash = sha256(JSON.stringify(semanticFeedback));
   const priorCardHash = sha256(JSON.stringify(previousExtraction.card));
   const cacheKey = sha256([
@@ -584,7 +719,7 @@ async function regenerateEntry(entry, previousExtraction, semanticFeedback, apiK
     const validation = parsed.success ? validateMaterializedCard(entry, parsed.data) : { problems: ['schema failure'] };
     if (
       cached.promptVersion === regenerationPromptVersion
-      && cached.candidatePromptVersion === promptVersion
+      && cached.candidatePromptVersion === extractionConfig.promptVersion
       && cached.model === model
       && cached.sourceHash === previousExtraction.sourceHash
       && cached.priorCardHash === priorCardHash
@@ -602,7 +737,14 @@ async function regenerateEntry(entry, previousExtraction, semanticFeedback, apiK
   const responseIds = [];
   const attemptRecords = [];
   for (let attempt = 1; attempt <= 2; attempt += 1) {
-    const result = await requestCard(entry, apiKey, model, previousProblems, semanticFeedback);
+    const result = await requestCard(
+      entry,
+      apiKey,
+      model,
+      `${extractionConfig.instructions}${regenerationInstructions}`,
+      previousProblems,
+      semanticFeedback,
+    );
     addUsage(requestUsage, result.usage);
     responseIds.push(result.responseId);
     attemptRecords.push({
@@ -614,7 +756,7 @@ async function regenerateEntry(entry, previousExtraction, semanticFeedback, apiK
     await writeFile(attemptLogPath, `${JSON.stringify({
       schemaVersion: 1,
       promptVersion: regenerationPromptVersion,
-      candidatePromptVersion: promptVersion,
+      candidatePromptVersion: extractionConfig.promptVersion,
       model,
       sourceHash: previousExtraction.sourceHash,
       priorCardHash,
@@ -627,7 +769,7 @@ async function regenerateEntry(entry, previousExtraction, semanticFeedback, apiK
       const artifact = {
         schemaVersion: 1,
         promptVersion: regenerationPromptVersion,
-        candidatePromptVersion: promptVersion,
+        candidatePromptVersion: extractionConfig.promptVersion,
         model,
         sourceHash: previousExtraction.sourceHash,
         priorCardHash,
@@ -647,7 +789,11 @@ async function regenerateEntry(entry, previousExtraction, semanticFeedback, apiK
     previousProblems = result.problems;
   }
 
-  throw new Error(`${entry.id}: regeneration failed quality gates after two attempts (${previousProblems.join('; ')})`);
+  throw new QualityGateError(
+    `${entry.id}: regeneration failed quality gates after two attempts (${previousProblems.join('; ')})`,
+    'extraction',
+    requestUsage,
+  );
 }
 
 function candidateItemContent(field, item) {
@@ -677,17 +823,6 @@ function candidateItems(card, sentences) {
     ...cardFields.filter(field => field !== 'oneSentence').flatMap(field =>
       card[field].map((item, index) => makeItem(`${field}.${index}`, field, item))),
   ];
-}
-
-function candidateItemText(item) {
-  if (item.content.claim) return item.content.claim;
-  if (item.content.question) return item.content.question;
-  if (item.content.label) return item.content.label;
-  return `${item.content.actor}: ${item.content.role}`;
-}
-
-function candidateItemFingerprint(item) {
-  return sha256(JSON.stringify(item));
 }
 
 function calibrationLabelKey(label) {
@@ -811,12 +946,17 @@ function buildRegenerationFeedback(card, verification, applied, calibration, pre
 }
 
 function validateVerification(entry, candidate, items, sentences) {
-  const verification = verificationResultSchema.parse(candidate);
+  const rawVerification = verificationResultSchema.parse(candidate);
   const problems = [];
-  if (verification.entryId !== entry.id) problems.push(`entryId was ${verification.entryId}`);
+  if (rawVerification.entryId !== entry.id) problems.push(`entryId was ${rawVerification.entryId}`);
 
   const itemById = new Map(items.map(item => [item.itemId, item]));
-  const decisionIds = verification.decisions.map(decision => decision.itemId);
+  const { normalizedDecisions, normalizations } = normalizeInferenceAdmissions(
+    rawVerification.decisions,
+    items,
+  );
+  const verification = { ...rawVerification, decisions: normalizedDecisions };
+  const decisionIds = normalizedDecisions.map(decision => decision.itemId);
   const duplicateIds = decisionIds.filter((id, index) => decisionIds.indexOf(id) !== index);
   const missingIds = items.map(item => item.itemId).filter(id => !decisionIds.includes(id));
   const extraIds = decisionIds.filter(id => !itemById.has(id));
@@ -835,13 +975,6 @@ function validateVerification(entry, candidate, items, sentences) {
     if (decision.verdict !== 'unsupported' && decision.evidenceSentenceIds.length === 0) {
       problems.push(`${decision.itemId} has no verifier evidence`);
     }
-    if (
-      decision.verdict !== 'unsupported'
-      && item.currentField !== 'transferQuestions'
-      && /\b(?:imply|implies|implied|suggest|suggests|suggested|indicate|indicates|indicated|indicating)\b/i.test(decision.rationale)
-    ) {
-      problems.push(`${decision.itemId} verifier rationale admits an inference`);
-    }
     if (decision.verdict === 'supported' && decision.targetField !== item.currentField) {
       problems.push(`${decision.itemId} is supported but targets ${decision.targetField}`);
     }
@@ -858,6 +991,7 @@ function validateVerification(entry, candidate, items, sentences) {
   }
 
   return {
+    rawVerification,
     verification: {
       ...verification,
       decisions: verification.decisions.map(decision => ({
@@ -865,7 +999,58 @@ function validateVerification(entry, candidate, items, sentences) {
         evidenceQuotes: decision.evidenceSentenceIds.map(id => sentenceMap.get(id)).filter(Boolean),
       })),
     },
+    normalizations,
     problems,
+  };
+}
+
+function manualReplacementKey(record) {
+  return `${record.entryId}\n${record.replacesItemFingerprint}`;
+}
+
+function applyManualReplacement(entry, card, verification, manualReview) {
+  const sentences = sourceSentences(entry.body);
+  const sentenceMap = new Map(sentences.map(sentence => [sentence.id, sentence.text]));
+  const oneSentenceCandidate = candidateItems(card, sentences)
+    .find(item => item.itemId === 'oneSentence');
+  const replacementRecord = (manualReview.manualReplacements ?? []).find(record =>
+    record.entryId === entry.id
+    && record.replacesItemFingerprint === candidateItemFingerprint(oneSentenceCandidate));
+  if (!replacementRecord) return { card, verification, replacements: [] };
+
+  const decision = verification.decisions.find(item => item.itemId === 'oneSentence');
+  if (!decision || decision.verdict !== 'unsupported') {
+    throw new Error(`${entry.id}: a manual one-sentence replacement may only replace a verifier-rejected candidate`);
+  }
+  const evidenceQuotes = replacementRecord.replacement.evidenceSentenceIds
+    .map(id => sentenceMap.get(id));
+  if (evidenceQuotes.some(quote => !quote)) {
+    throw new Error(`${entry.id}: manual one-sentence replacement cites an unknown source sentence`);
+  }
+  const replacementItem = {
+    claim: replacementRecord.replacement.content.claim,
+    evidenceQuotes,
+  };
+  const replacementDecision = {
+    itemId: 'oneSentence',
+    verdict: 'supported',
+    targetField: 'oneSentence',
+    rationale: `Explicit human replacement: ${replacementRecord.note}`,
+    evidenceSentenceIds: replacementRecord.replacement.evidenceSentenceIds,
+    evidenceQuotes,
+  };
+  return {
+    card: { ...card, oneSentence: replacementItem },
+    verification: {
+      ...verification,
+      decisions: verification.decisions.map(item =>
+        item.itemId === 'oneSentence' ? replacementDecision : item),
+    },
+    replacements: [{
+      ...replacementRecord,
+      replacementItem,
+      replacementDecision,
+    }],
   };
 }
 
@@ -930,7 +1115,14 @@ function applyVerification(entry, card, verification) {
   return { verifiedCard: parsed.data, actions, applicationLog, problems: validation.problems };
 }
 
-async function requestVerification(entry, card, apiKey, model, previousProblems = []) {
+async function requestVerification(
+  entry,
+  card,
+  apiKey,
+  model,
+  semanticVerificationInstructions,
+  previousProblems = [],
+) {
   const sentences = sourceSentences(entry.body);
   const items = candidateItems(card, sentences);
   const input = [
@@ -944,13 +1136,14 @@ async function requestVerification(entry, card, apiKey, model, previousProblems 
   ].join('\n');
   const response = await fetch(apiUrl, {
     method: 'POST',
+    signal: AbortSignal.timeout(180_000),
     headers: {
       authorization: `Bearer ${apiKey}`,
       'content-type': 'application/json',
     },
     body: JSON.stringify({
       model,
-      instructions: verificationInstructions,
+      instructions: semanticVerificationInstructions,
       input,
       reasoning: { effort: 'low' },
       text: {
@@ -990,9 +1183,9 @@ async function requestVerification(entry, card, apiKey, model, previousProblems 
   };
 }
 
-async function verifyEntry(entry, extraction, apiKey, model) {
+async function verifyEntry(entry, extraction, apiKey, model, verificationConfig) {
   const cardHash = sha256(JSON.stringify(extraction.card));
-  const cacheKey = sha256(`${verificationPromptVersion}\n${model}\n${extraction.sourceHash}\n${cardHash}`);
+  const cacheKey = sha256(`${verificationConfig.promptVersion}\n${model}\n${extraction.sourceHash}\n${cardHash}`);
   const cachePath = resolve(verificationCacheDir, `${entry.id}-${cacheKey.slice(0, 16)}.json`);
   const attemptLogPath = resolve(verificationCacheDir, `${entry.id}-${cacheKey.slice(0, 16)}-${Date.now()}-attempts.json`);
 
@@ -1000,7 +1193,7 @@ async function verifyEntry(entry, extraction, apiKey, model) {
     const cached = JSON.parse(await readFile(cachePath, 'utf8'));
     const applied = applyVerification(entry, extraction.card, cached.verification);
     if (
-      cached.promptVersion === verificationPromptVersion
+      cached.promptVersion === verificationConfig.promptVersion
       && cached.model === model
       && cached.sourceHash === extraction.sourceHash
       && cached.cardHash === cardHash
@@ -1024,7 +1217,14 @@ async function verifyEntry(entry, extraction, apiKey, model) {
   const responseIds = [];
   const attemptRecords = [];
   for (let attempt = 1; attempt <= 2; attempt += 1) {
-    const result = await requestVerification(entry, extraction.card, apiKey, model, previousProblems);
+    const result = await requestVerification(
+      entry,
+      extraction.card,
+      apiKey,
+      model,
+      verificationConfig.instructions,
+      previousProblems,
+    );
     addUsage(requestUsage, result.usage);
     responseIds.push(result.responseId);
     const applied = result.problems.length === 0
@@ -1036,7 +1236,9 @@ async function verifyEntry(entry, extraction, apiKey, model) {
       responseId: result.responseId,
       usage: result.usage,
       problems,
+      rawVerification: result.rawVerification,
       verification: result.verification,
+      normalizations: result.normalizations,
       application: result.problems.length === 0 ? {
         actions: applied.actions,
         applicationLog: applied.applicationLog,
@@ -1045,7 +1247,7 @@ async function verifyEntry(entry, extraction, apiKey, model) {
     });
     await writeFile(attemptLogPath, `${JSON.stringify({
       schemaVersion: 1,
-      promptVersion: verificationPromptVersion,
+      promptVersion: verificationConfig.promptVersion,
       model,
       sourceHash: extraction.sourceHash,
       cardHash,
@@ -1055,7 +1257,7 @@ async function verifyEntry(entry, extraction, apiKey, model) {
     if (result.problems.length === 0) {
       const artifact = {
         schemaVersion: 1,
-        promptVersion: verificationPromptVersion,
+        promptVersion: verificationConfig.promptVersion,
         model,
         sourceHash: extraction.sourceHash,
         cardHash,
@@ -1065,7 +1267,9 @@ async function verifyEntry(entry, extraction, apiKey, model) {
         usage: requestUsage,
         accepted: applied.problems.length === 0,
         problems: applied.problems,
+        rawVerification: result.rawVerification,
         verification: result.verification,
+        normalizations: result.normalizations,
         actions: applied.actions,
         applicationLog: applied.applicationLog,
         verifiedCard: applied.verifiedCard,
@@ -1076,7 +1280,11 @@ async function verifyEntry(entry, extraction, apiKey, model) {
     previousProblems = problems;
   }
 
-  throw new Error(`${entry.id}: verifier failed quality gates after two attempts (${previousProblems.join('; ')})`);
+  throw new QualityGateError(
+    `${entry.id}: verifier failed quality gates after two attempts (${previousProblems.join('; ')})`,
+    'verification',
+    requestUsage,
+  );
 }
 
 function addUsage(total, usage) {
@@ -1086,9 +1294,21 @@ function addUsage(total, usage) {
 }
 
 async function main() {
-  if (!process.argv.includes('--pilot')) {
-    throw new Error('Only the explicit --pilot mode is implemented; the full corpus requires a separate approval.');
+  const pilotMode = process.argv.includes('--pilot');
+  const fullMode = process.argv.includes('--full');
+  if (pilotMode === fullMode) {
+    throw new Error('Choose exactly one extraction mode: --pilot or --full.');
   }
+  const mode = pilotMode ? 'pilot' : 'full';
+  const extractionConfig = pilotMode
+    ? { promptVersion, instructions }
+    : { promptVersion: fullPromptVersion, instructions: fullCorpusInstructions };
+  const verificationConfig = pilotMode
+    ? { promptVersion: verificationPromptVersion, instructions: verificationInstructions }
+    : {
+      promptVersion: fullVerificationPromptVersion,
+      instructions: fullCorpusVerificationInstructions,
+    };
 
   await loadEnvFile();
   const apiKey = process.env.OPENAI_API_KEY;
@@ -1100,154 +1320,298 @@ async function main() {
 
   const sourceText = await readFile(sourcePath, 'utf8');
   const source = JSON.parse(sourceText);
-  const calibration = calibrationSchema.parse(JSON.parse(await readFile(calibrationPath, 'utf8')));
-  if (calibration.sourceSha256 !== sha256(sourceText)) {
-    throw new Error('Manual calibration labels do not match the build-time source snapshot.');
-  }
-  if (calibration.candidatePromptVersion !== promptVersion) {
-    throw new Error('Manual calibration labels do not match the candidate extraction prompt version.');
-  }
-  if (calibration.candidateModel !== model) {
-    throw new Error('Manual calibration labels do not match the candidate extraction model.');
-  }
   const byId = new Map(source.entries.map(entry => [entry.id, entry]));
+  let manualReview;
+  let manualReviewSha256;
+  if (pilotMode) {
+    const manualReviewText = await readFile(calibrationPath, 'utf8');
+    manualReview = calibrationSchema.parse(JSON.parse(manualReviewText));
+    manualReviewSha256 = sha256(manualReviewText);
+    if (manualReview.sourceSha256 !== sha256(sourceText)) {
+      throw new Error('Manual calibration labels do not match the build-time source snapshot.');
+    }
+    if (manualReview.candidatePromptVersion !== extractionConfig.promptVersion) {
+      throw new Error('Manual calibration labels do not match the candidate extraction prompt version.');
+    }
+    if (manualReview.candidateModel !== model) {
+      throw new Error('Manual calibration labels do not match the candidate extraction model.');
+    }
+  } else {
+    const manualReviewText = await readFile(corpusOverridesPath, 'utf8');
+    manualReview = corpusOverridesSchema.parse(JSON.parse(manualReviewText));
+    manualReviewSha256 = sha256(manualReviewText);
+    const identityProblems = validateReviewLabelIdentities(manualReview.labels);
+    if (identityProblems.length > 0) {
+      throw new Error(`Full-corpus manual override identities are invalid:\n${identityProblems.join('\n')}`);
+    }
+    const replacementIdentityProblems = validateManualReplacementIdentities(
+      manualReview.manualReplacements,
+    );
+    if (replacementIdentityProblems.length > 0) {
+      throw new Error(`Full-corpus manual replacement identities are invalid:\n${replacementIdentityProblems.join('\n')}`);
+    }
+    if (manualReview.sourceSha256 !== sha256(sourceText)) {
+      throw new Error('Full-corpus manual overrides do not match the build-time source snapshot.');
+    }
+    if (
+      manualReview.candidatePromptVersion !== extractionConfig.promptVersion
+      || manualReview.candidateModel !== model
+      || manualReview.verificationPromptVersion !== verificationConfig.promptVersion
+      || manualReview.verificationModel !== verificationModel
+    ) {
+      throw new Error('Full-corpus manual overrides do not match the extraction and verification configuration.');
+    }
+  }
+
   const entryFlag = process.argv.indexOf('--entry');
-  const requestedIds = entryFlag >= 0 ? [process.argv[entryFlag + 1]] : pilotIds;
+  const requestedIds = entryFlag >= 0
+    ? [process.argv[entryFlag + 1]]
+    : pilotMode ? pilotIds : source.entries.map(entry => entry.id);
   if (requestedIds.some(id => !id)) throw new Error('--entry requires an entry ID.');
-  if (requestedIds.some(id => !pilotIds.includes(id))) {
-    throw new Error('--entry is limited to one of the five calibrated pilot entries.');
+  if (pilotMode && requestedIds.some(id => !pilotIds.includes(id))) {
+    throw new Error('--entry is limited to one of the five calibrated pilot entries in --pilot mode.');
   }
   const entries = requestedIds.map(id => {
     const entry = byId.get(id);
-    if (!entry) throw new Error(`Pilot source entry not found: ${id}`);
-    if (!entry.body) throw new Error(`Pilot source entry has no body: ${id}`);
+    if (!entry) throw new Error(`Source entry not found: ${id}`);
+    if (!entry.body) throw new Error(`Source entry has no body: ${id}`);
     return entry;
   });
+  const outputPath = fullMode && entryFlag >= 0
+    ? resolve(projectRoot, `.source-cache/method-card-full-${requestedIds[0]}.json`)
+    : fullMode ? fullOutputPath : pilotOutputPath;
 
   await Promise.all([
     mkdir(cacheDir, { recursive: true }),
     mkdir(verificationCacheDir, { recursive: true }),
   ]);
+  const startedAt = new Date().toISOString();
   const results = [];
-  const expectedCalibrationLabels = calibration.labels.filter(label => requestedIds.includes(label.entryId));
-  const coveredCalibrationLabels = new Set();
+  const expectedManualLabels = manualReview.labels.filter(label => requestedIds.includes(label.entryId));
+  const coveredManualLabels = new Set();
+  const expectedManualReplacements = (manualReview.manualReplacements ?? [])
+    .filter(record => requestedIds.includes(record.entryId));
+  const coveredManualReplacements = new Set();
   const extractionUsage = {};
   const verificationUsage = {};
-  for (const entry of entries) {
-    let extraction = await extractEntry(entry, apiKey, model);
-    if (!extraction.cacheHit) addUsage(extractionUsage, extraction.usage);
+
+  const writeOutput = async () => {
+    const totalUsage = {};
+    addUsage(totalUsage, extractionUsage);
+    addUsage(totalUsage, verificationUsage);
+    const representedExtractionUsage = {};
+    const representedVerificationUsage = {};
+    for (const result of results) {
+      for (const round of result.rounds) {
+        addUsage(representedExtractionUsage, round.extraction?.usage);
+        addUsage(representedVerificationUsage, round.verification?.usage);
+      }
+    }
+    const representedTotalUsage = {};
+    addUsage(representedTotalUsage, representedExtractionUsage);
+    addUsage(representedTotalUsage, representedVerificationUsage);
+    const uncoveredManualLabels = expectedManualLabels.filter(
+      label => !coveredManualLabels.has(calibrationLabelKey(label)),
+    );
+    const uncoveredManualReplacements = expectedManualReplacements.filter(
+      record => !coveredManualReplacements.has(manualReplacementKey(record)),
+    );
+    const output = {
+      schemaVersion: 5,
+      kind: pilotMode
+        ? 'Beautiful Solutions calibrated and verified method-card extraction pilot'
+        : 'Beautiful Solutions verified full-corpus entry-card extraction',
+      mode,
+      promptVersion: extractionConfig.promptVersion,
+      model,
+      verificationPromptVersion: verificationConfig.promptVersion,
+      verificationModel,
+      startedAt,
+      updatedAt: new Date().toISOString(),
+      sourcePath: '.source-cache/toolbox-full.json',
+      sourceSha256: sha256(sourceText),
+      requestedEntries: entries.length,
+      completedEntries: results.length,
+      ...(pilotMode ? {
+        calibrationPath: 'evaluation/method-card-pilot-labels.json',
+        calibrationSha256: manualReviewSha256,
+        calibrationCoverage: {
+          expected: expectedManualLabels.length,
+          covered: coveredManualLabels.size,
+          uncovered: uncoveredManualLabels.map(label => ({
+            entryId: label.entryId,
+            itemId: label.itemId,
+            itemFingerprint: label.itemFingerprint,
+          })),
+        },
+      } : {
+        calibrationBoundary: 'The 18 manual labels calibrate the separate five-entry pilot; they are not human labels for these unseen full-corpus cards.',
+        manualOverridesPath: 'evaluation/method-card-corpus-overrides.json',
+        manualOverridesSha256: manualReviewSha256,
+        manualOverrideCoverage: {
+          expected: expectedManualLabels.length,
+          covered: coveredManualLabels.size,
+          uncovered: uncoveredManualLabels.map(label => ({
+            entryId: label.entryId,
+            itemId: label.itemId,
+            itemFingerprint: label.itemFingerprint,
+          })),
+        },
+        manualReplacementCoverage: {
+          expected: expectedManualReplacements.length,
+          covered: coveredManualReplacements.size,
+          uncovered: uncoveredManualReplacements.map(record => ({
+            entryId: record.entryId,
+            replacesItemFingerprint: record.replacesItemFingerprint,
+          })),
+        },
+      }),
+      entries: results,
+      runUsage: {
+        extraction: extractionUsage,
+        verification: verificationUsage,
+        total: totalUsage,
+      },
+      representedArtifactUsage: {
+        extraction: representedExtractionUsage,
+        verification: representedVerificationUsage,
+        total: representedTotalUsage,
+      },
+    };
+    await writeFile(outputPath, `${JSON.stringify(output, null, 2)}\n`, 'utf8');
+    return { totalUsage, uncoveredManualLabels, uncoveredManualReplacements };
+  };
+
+  for (const [entryIndex, entry] of entries.entries()) {
     const rounds = [];
     let finalCard;
     let status = 'failed';
     let calibrationFailed = false;
-
-    for (let round = 0; round <= maxRegenerationRounds; round += 1) {
-      const verification = await verifyEntry(entry, extraction, apiKey, verificationModel);
-      if (!verification.cacheHit) addUsage(verificationUsage, verification.usage);
-      const calibrationScore = scoreCalibration(entry, extraction.card, verification.verification, calibration);
-      calibrationScore.results
-        .filter(result => result.status !== 'not_applicable')
-        .forEach(result => coveredCalibrationLabels.add(calibrationLabelKey(result)));
-      if (calibrationScore.failed > 0) calibrationFailed = true;
-      const calibrated = applyCalibrationOverrides(
-        entry,
-        extraction.card,
-        verification.verification,
-        calibrationScore,
-      );
-      const applied = applyVerification(entry, extraction.card, calibrated.verification);
-      rounds.push({
-        round,
-        extraction: Object.fromEntries(Object.entries(extraction).filter(([key]) => key !== 'cacheHit')),
-        verification: Object.fromEntries(Object.entries(verification).filter(([key]) => key !== 'cacheHit')),
-        calibration: calibrationScore,
-        manualOverrides: calibrated.overrides,
-        calibratedApplication: {
-          actions: applied.actions,
-          applicationLog: applied.applicationLog,
-          problems: applied.problems,
-          verifiedCard: applied.verifiedCard,
-        },
-      });
-
-      console.log([
-        `${entry.id} round ${round}: ${extraction.cacheHit ? 'extraction cache hit' : round === 0 ? 'extracted' : 'regenerated'}`,
-        `${verification.cacheHit ? 'verification cache hit' : 'verified'}`,
-        `${calibrationScore.passed}/${calibrationScore.applicable} calibration labels passed`,
-        `${applied.actions.reclassified} reclassified`,
-        `${applied.actions.removed} removed`,
-        `${applied.actions.deduplicated} deduplicated`,
-      ].join('; '));
-
-      if (applied.problems.length === 0) {
-        finalCard = applied.verifiedCard;
-        status = 'accepted';
-        break;
-      }
-      if (round === maxRegenerationRounds) break;
-
-      const feedback = buildRegenerationFeedback(
-        extraction.card,
-        calibrated.verification,
-        applied,
-        calibrated,
-        extraction.semanticFeedback,
-      );
-      extraction = await regenerateEntry(entry, extraction, feedback, apiKey, model, round + 1);
+    let failure;
+    try {
+      let extraction = await extractEntry(entry, apiKey, model, extractionConfig);
       if (!extraction.cacheHit) addUsage(extractionUsage, extraction.usage);
+
+      for (let round = 0; round <= maxRegenerationRounds; round += 1) {
+        const verification = await verifyEntry(
+          entry,
+          extraction,
+          apiKey,
+          verificationModel,
+          verificationConfig,
+        );
+        if (!verification.cacheHit) addUsage(verificationUsage, verification.usage);
+        const calibrationScore = scoreCalibration(
+          entry,
+          extraction.card,
+          verification.verification,
+          manualReview,
+        );
+        calibrationScore.results
+          .filter(result => result.status !== 'not_applicable')
+          .forEach(result => coveredManualLabels.add(calibrationLabelKey(result)));
+        if (calibrationScore.failed > 0) calibrationFailed = true;
+        const adjudicated = applyCalibrationOverrides(
+          entry,
+          extraction.card,
+          verification.verification,
+          calibrationScore,
+        );
+        const replacement = applyManualReplacement(
+          entry,
+          extraction.card,
+          adjudicated.verification,
+          manualReview,
+        );
+        replacement.replacements.forEach(record =>
+          coveredManualReplacements.add(manualReplacementKey(record)));
+        const applied = applyVerification(entry, replacement.card, replacement.verification);
+        rounds.push({
+          round,
+          extraction: Object.fromEntries(Object.entries(extraction).filter(([key]) => key !== 'cacheHit')),
+          verification: Object.fromEntries(Object.entries(verification).filter(([key]) => key !== 'cacheHit')),
+          ...(pilotMode ? { calibration: calibrationScore } : { corpusOverrideScore: calibrationScore }),
+          manualOverrides: adjudicated.overrides,
+          manualReplacements: replacement.replacements,
+          application: {
+            actions: applied.actions,
+            applicationLog: applied.applicationLog,
+            problems: applied.problems,
+            verifiedCard: applied.verifiedCard,
+          },
+        });
+
+        console.log([
+          `[${entryIndex + 1}/${entries.length}] ${entry.id} round ${round}`,
+          extraction.cacheHit ? 'extraction cache hit' : round === 0 ? 'extracted' : 'regenerated',
+          verification.cacheHit ? 'verification cache hit' : 'verified',
+          ...(calibrationScore.applicable > 0
+            ? [`${calibrationScore.passed}/${calibrationScore.applicable} manual labels agreed`]
+            : []),
+          `${applied.actions.reclassified} reclassified`,
+          `${applied.actions.removed} removed`,
+          `${applied.actions.deduplicated} deduplicated`,
+        ].join('; '));
+
+        if (applied.problems.length === 0) {
+          finalCard = applied.verifiedCard;
+          status = 'accepted';
+          break;
+        }
+        if (round === maxRegenerationRounds) break;
+
+        const feedback = buildRegenerationFeedback(
+          extraction.card,
+          adjudicated.verification,
+          applied,
+          adjudicated,
+          extraction.semanticFeedback,
+        );
+        extraction = await regenerateEntry(
+          entry,
+          extraction,
+          feedback,
+          apiKey,
+          model,
+          extractionConfig,
+          round + 1,
+        );
+        if (!extraction.cacheHit) addUsage(extractionUsage, extraction.usage);
+      }
+    } catch (error) {
+      if (!(error instanceof QualityGateError)) throw error;
+      addUsage(error.stage === 'verification' ? verificationUsage : extractionUsage, error.usage);
+      failure = { stage: error.stage, message: error.message };
+      console.error(`[${entryIndex + 1}/${entries.length}] ${entry.id}: ${error.message}`);
     }
 
     results.push({
       entryId: entry.id,
+      entryType: entry.type,
       status,
       verifierDisagreedWithManualLabel: calibrationFailed,
+      ...(failure ? { failure } : {}),
       finalCard,
       rounds,
     });
+    await writeOutput();
   }
 
-  const totalUsage = {};
-  addUsage(totalUsage, extractionUsage);
-  addUsage(totalUsage, verificationUsage);
-  const uncoveredCalibrationLabels = expectedCalibrationLabels.filter(
-    label => !coveredCalibrationLabels.has(calibrationLabelKey(label)),
-  );
-
-  const output = {
-    schemaVersion: 3,
-    kind: 'Beautiful Solutions calibrated and verified method-card extraction pilot',
-    promptVersion,
-    model,
-    verificationPromptVersion,
-    verificationModel,
-    generatedAt: new Date().toISOString(),
-    sourcePath: '.source-cache/toolbox-full.json',
-    calibrationPath: 'evaluation/method-card-pilot-labels.json',
-    calibrationCoverage: {
-      expected: expectedCalibrationLabels.length,
-      covered: coveredCalibrationLabels.size,
-      uncovered: uncoveredCalibrationLabels.map(label => ({
-        entryId: label.entryId,
-        itemId: label.itemId,
-        itemFingerprint: label.itemFingerprint,
-      })),
-    },
-    entries: results,
-    runUsage: {
-      extraction: extractionUsage,
-      verification: verificationUsage,
-      total: totalUsage,
-    },
-  };
-  await writeFile(pilotOutputPath, `${JSON.stringify(output, null, 2)}\n`, 'utf8');
-  console.log(`Pilot artifact: .source-cache/${pilotOutputPath.split(/[\\/]/).at(-1)}`);
-  console.log(`Run usage: ${totalUsage.input_tokens ?? 0} input, ${totalUsage.output_tokens ?? 0} output, ${totalUsage.total_tokens ?? 0} total tokens`);
+  const { totalUsage, uncoveredManualLabels, uncoveredManualReplacements } = await writeOutput();
   const accepted = results.filter(result => result.status === 'accepted').length;
-  console.log(`Pilot verdict: ${accepted}/${results.length} entries accepted.`);
-  console.log(`Calibration coverage: ${coveredCalibrationLabels.size}/${expectedCalibrationLabels.length} labels applied.`);
-  const disagreementEntries = results.filter(result => result.verifierDisagreedWithManualLabel).length;
-  console.log(`Manual calibration overrides were required for ${disagreementEntries}/${results.length} entries.`);
-  if (accepted !== results.length || uncoveredCalibrationLabels.length > 0) process.exitCode = 1;
+  console.log(`${mode === 'pilot' ? 'Pilot' : 'Full-corpus'} artifact: .source-cache/${outputPath.split(/[\\/]/).at(-1)}`);
+  console.log(`Run usage: ${totalUsage.input_tokens ?? 0} input, ${totalUsage.output_tokens ?? 0} output, ${totalUsage.total_tokens ?? 0} total tokens`);
+  console.log(`${mode === 'pilot' ? 'Pilot' : 'Full-corpus'} verdict: ${accepted}/${results.length} entries accepted.`);
+  if (pilotMode) {
+    console.log(`Calibration coverage: ${coveredManualLabels.size}/${expectedManualLabels.length} labels applied.`);
+    const disagreementEntries = results.filter(result => result.verifierDisagreedWithManualLabel).length;
+    console.log(`Manual calibration overrides were required for ${disagreementEntries}/${results.length} entries.`);
+  }
+  if (
+    accepted !== results.length
+    || uncoveredManualLabels.length > 0
+    || uncoveredManualReplacements.length > 0
+  ) process.exitCode = 1;
 }
 
 await main();

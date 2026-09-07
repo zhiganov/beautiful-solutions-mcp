@@ -195,3 +195,44 @@ fill is removed, but the MCP remains **not accepted for practitioner
 application**. The remaining failures are not well served by more stop-word or
 weight tuning over short snapshots. The next justified step is richer
 build-time method extraction, followed by the same acceptance suite.
+
+## Retest after reviewed method-card integration
+
+Retested on 2026-09-07 through the same in-memory MCP protocol boundary after
+all 85 final cards passed hash-bound manual semantic review. Runtime data omits
+complete write-ups and build-time verification quotations.
+
+**Resolved**
+
+- The housing map leads with Limited-Equity Housing Cooperatives and Community
+  Land Trusts. The Community Land Trust detail now provides three mechanisms,
+  two enabling conditions, three constraints, and a source-grounded transfer
+  question.
+- The housing comparison now exposes mechanisms, governance roles, conditions,
+  constraints, and observable structures for both approaches instead of only
+  juxtaposing short summaries and relationship counts.
+- The discussion guide includes both reviewed method cards and three adapted,
+  source-grounded transfer questions, with an explicit notice that these are
+  adaptations rather than source quotations or recommendations.
+- The gig-worker map leads its story lens with Artist and Freelancer Co-ops in
+  Europe. A plain-language search for a worker-owned gig-work app also returns
+  that entry first.
+- The renewable-energy map leads its solution lens with Remunicipalization and
+  its story lens with Energiewende. A plain-language search for community-owned
+  solar power returns Energiewende and Seikatsu Club first.
+- Search results now disclose matched tokens and fields. Ranking remains
+  deterministic, with reviewed method-card vocabulary, an explicit
+  solar/renewable synonym bridge, and strong source-sector weighting.
+
+**Remaining boundary**
+
+- Some secondary lenses remain broad lexical connections. For example, the
+  housing map can surface the source question about colonial borders because
+  its reviewed card directly discusses land and displacement. These are
+  exploration leads only; the tool still does not claim recommendation or
+  local applicability.
+
+**Retest verdict:** **Accepted for bounded practitioner exploration and
+discussion preparation.** The MCP now supplies enough reviewed method depth for
+the tested discovery, inspection, comparison, and facilitation jobs while
+preserving the requirement to assess fit with affected people in context.

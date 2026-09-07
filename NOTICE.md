@@ -24,6 +24,8 @@ Coalition, People's Hub, and Highlander Center.
   scaffolds. These scaffolds do not add claims to the source entries.
 - Added source-derived manual sentinel labels for build-time extraction
   evaluation; these labels are not source-authored recommendations.
+- Added manually reviewed, source-grounded method cards while excluding the
+  complete source write-ups and build-time verification quotations.
 - Excluded images and image captions from redistribution.
 
 This independent project is not endorsed by Beautiful Trouble or the book's

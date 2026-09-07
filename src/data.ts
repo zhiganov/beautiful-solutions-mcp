@@ -1,5 +1,10 @@
 import { readFileSync } from 'node:fs';
-import type { SourceManifest, ToolboxData } from './types.js';
+import type {
+  MethodCardData,
+  MethodCardManifest,
+  SourceManifest,
+  ToolboxData,
+} from './types.js';
 
 function readJson<T>(relativePath: string): T {
   return JSON.parse(readFileSync(new URL(relativePath, import.meta.url), 'utf8')) as T;
@@ -7,6 +12,8 @@ function readJson<T>(relativePath: string): T {
 
 export const TOOLBOX = readJson<ToolboxData>('./data/toolbox.json');
 export const SOURCE_MANIFEST = readJson<SourceManifest>('./data/source-manifest.json');
+export const METHOD_CARDS = readJson<MethodCardData>('./data/method-cards.json');
+export const METHOD_CARD_MANIFEST = readJson<MethodCardManifest>('./data/method-card-manifest.json');
 
 export const ATTRIBUTION = {
   work: SOURCE_MANIFEST.source.work,
@@ -15,7 +22,7 @@ export const ATTRIBUTION = {
   source: SOURCE_MANIFEST.source.toolboxUrl,
   license: SOURCE_MANIFEST.license.id,
   licenseUrl: SOURCE_MANIFEST.license.url,
-  changes: SOURCE_MANIFEST.changes,
+  changes: [...SOURCE_MANIFEST.changes, ...METHOD_CARDS.changes],
   endorsement: 'Independent adaptation; not endorsed by Beautiful Trouble or the editors or contributors.',
 };
 
