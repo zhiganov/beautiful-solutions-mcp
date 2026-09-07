@@ -114,10 +114,16 @@ export function searchEntries(entries: RuntimeToolboxEntry[], query: string, fil
     let score = 0;
     const matchedFields: string[] = [];
     const directMatchedTokens = new Set<string>();
+    const matchedQueryTokens = new Set<string>();
     let hasLiteralSourceTextMatch = false;
 
     for (const [fieldName, tokens] of Object.entries(directFields) as [keyof typeof directFields, Set<string>][]) {
       const matches = queryTokens.filter(token => tokens.has(token));
+      literalQueryTokens.forEach(token => {
+        if ([token, ...(QUERY_TOKEN_EXPANSIONS[token] ?? [])].some(candidate => tokens.has(candidate))) {
+          matchedQueryTokens.add(token);
+        }
+      });
       if (
         (fieldName === 'title' || fieldName === 'summary')
         && literalQueryTokens.some(token => tokens.has(token))
@@ -139,8 +145,8 @@ export function searchEntries(entries: RuntimeToolboxEntry[], query: string, fil
     if (normalizedQuery.length > 2 && normalizedTitle.includes(normalizedQuery)) score += 14;
     else if (normalizedQuery.length > 4 && normalizedSummary.includes(normalizedQuery)) score += 6;
 
-    if (directMatchedTokens.size < (filters.minDirectMatches ?? 1)) return [];
-    score += directMatchedTokens.size ** 2 * 2;
+    if (matchedQueryTokens.size < (filters.minDirectMatches ?? 1)) return [];
+    score += matchedQueryTokens.size ** 2 * 2;
 
     for (const [fieldName, tokens] of Object.entries(contextualFields) as [keyof typeof contextualFields, Set<string>][]) {
       const matches = queryTokens.filter(token => tokens.has(token));

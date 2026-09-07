@@ -1,0 +1,4 @@
+src/data/*.json text eol=lf
+evaluation/*.json text eol=lf
+book-power.json text eol=lf
+package*.json text eol=lf
